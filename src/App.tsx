@@ -6,7 +6,7 @@ import { Point, interpolate, dist } from './Interpolate';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
-const CELL_COUNT_X = 32;
+const CELL_COUNT_X = 24;
 const CELL_COUNT_Y = 18;
 const EDITOR = false;
 
@@ -31,13 +31,82 @@ const SMALL_OFFSETS: Point[] = [
 // ];
 
 const PATH: Point[] = [
-  [250,-10],[250,250],[1320,150],[1371,484],[593,794],[638,634],[1053,367],[146,543],[1269,755],[1460,931],
+  //[250,-10],[250,250],[1320,150],[1371,484],[593,794],[638,634],[1053,367],[146,543],[1269,755],[1460,931],
+  [188, -10], [188, 250], [990, 150], [1028, 484], [445, 794], [478, 634], [790, 367], [110, 543], [952, 755], [1095, 931],
 ];
 
 type GameState = 'wave' | 'build' | 'dead';
 
+type TurretType = 'basic' | 'slow' | 'splash' | 'magic' | 'laser' | 'wall' | 'repair' | 'miner';
+const TURRET_TYPES: TurretType[] = [ 'basic', 'slow', 'splash', 'magic', 'laser', 'wall', 'repair', 'miner' ];
+
+interface TurretData {
+  icon: string;
+  cost: number;
+  name: string;
+  description: string;
+}
+
+const TURRET_DATA: { [key in TurretType]: TurretData } = {
+  basic: {
+    icon: '🔫',
+    cost: 5,
+    name: 'Basic Turret',
+    description: 'Shoots a single bullet at a time.',
+  },
+  slow: {
+    icon: '❄️',
+    cost: 8,
+    name: 'Slow Turret',
+    description: 'Slows enemies down.',
+  },
+  splash: {
+    icon: '💥',
+    cost: 12,
+    name: 'Splash Turret',
+    description: 'Shoots a bullet that explodes.',
+  },
+  magic: {
+    icon: '✨',
+    cost: 20,
+    name: 'Magic Turret',
+    description: 'Shoots a bullet that can hit multiple enemies.',
+  },
+  laser: {
+    icon: '🔥',
+    cost: 30,
+    name: 'Laser Turret',
+    description: 'Shoots a laser that can hit multiple enemies.',
+  },
+  wall: {
+    icon: '🧱',
+    cost: 10,
+    name: 'Wall',
+    description: 'Blocks enemies.',
+  },
+  repair: {
+    icon: '🔧',
+    cost: 12,
+    name: 'Repair Turret',
+    description: 'Repairs nearby turrets.',
+  },
+  miner: {
+    icon: '⛏️',
+    cost: 5,
+    name: 'Miner',
+    description: 'Mines gold.',
+  },
+};
+
+interface Turret {
+  hp: number;
+  type: TurretType;
+  cooldown: number;
+}
+
 interface CellContents {
   blocked: boolean;
+  turret: Turret | null;
 }
 
 class Enemy {
@@ -81,7 +150,7 @@ class Level {
     for (let y = 0; y < CELL_COUNT_Y; y++) {
       const row = [];
       for (let x = 0; x < CELL_COUNT_X; x++) {
-        row.push({ blocked: false });
+        row.push({ blocked: false, turret: null });
       }
       this.grid.push(row);
     }
@@ -114,8 +183,8 @@ class Level {
     let candidatePoint = PATH[0];
     let t = 0;
     while (t < 1) {
-      while (dist(candidatePoint, this.linearPoints[this.linearPoints.length - 1]) < 20 && t < 1) {
-        t += 0.0001;
+      while (dist(candidatePoint, this.linearPoints[this.linearPoints.length - 1]) < 10 && t < 1) {
+        t += 1e-5;
         candidatePoint = interpolate(PATH, t);
       }
       t = Math.min(t, 1);
@@ -133,11 +202,13 @@ class App extends React.PureComponent<IAppProps> {
   path: Point[] = [];
   enemies: Enemy[] = [];
   level: Level;
-  gold: number = 0;
+  gold: number = 20;
   wave: number = 1;
   hp: number = 100;
   waveTimer: number = 0;
   waveTimerMax: number = 1;
+  selectedTurretType: TurretType = TURRET_TYPES[0];
+  hoveredCell: CellContents | null = null;
   enemySchedule: [number, Enemy][] = [];
   gameState: GameState = 'build';
   lastRafTime: number = 0;
@@ -184,8 +255,23 @@ class App extends React.PureComponent<IAppProps> {
     this.waveTimerMax = 10 + this.wave;
     this.waveTimer = 0;
     this.enemySchedule = [];
-    for (let i = 0; i < this.waveTimerMax; i++) {
-      this.enemySchedule.push([ i, new Enemy(10, 100, 1, 'red', 8) ]);
+    for (let i = 0; i < this.waveTimerMax * 3; i++) {
+      this.enemySchedule.push([ Math.random() * this.waveTimerMax, new Enemy(2, 1, 1, 'red', 8) ]);
+    }
+    this.enemySchedule.sort((a, b) => a[0] - b[0]);
+  }
+
+  clickCell = (x: number, y: number) => {
+    if (this.gameState === 'dead')
+      return;
+  
+    const selectedTurretTypeData = TURRET_DATA[this.selectedTurretType];
+
+    const cell = this.level.grid[y][x];
+    cell.turret = {
+      hp: 10,
+      type: this.selectedTurretType,
+      cooldown: 0,
     }
   }
 
@@ -226,6 +312,20 @@ class App extends React.PureComponent<IAppProps> {
         this.gold += enemy.gold;
       }
     }
+
+    const hoveredCellX = Math.floor(this.mousePos[0] / CELL_SIZE);
+    const hoveredCellY = Math.floor((this.mousePos[1] - 100) / CELL_SIZE);
+    if (hoveredCellX >= 0 && hoveredCellX < this.level.grid[0].length && hoveredCellY >= 0 && hoveredCellY < this.level.grid.length) {
+      const cell = this.level.grid[hoveredCellY][hoveredCellX];
+      if (!cell.blocked) {
+        this.hoveredCell = cell;
+      } else {
+        this.hoveredCell = null;
+      }
+    } else {
+      this.hoveredCell = null;
+    }
+
     // // Spawn timer.
     // if (Math.random() < 0.01) {
     //   this.enemies.push(new Enemy(2, 1, 1));
@@ -237,6 +337,8 @@ class App extends React.PureComponent<IAppProps> {
   }
 
   render() {
+    const selectedTurretTypeData = TURRET_DATA[this.selectedTurretType];
+
     const knots = [];
     if (EDITOR) {
       for (let i = 0; i < this.path.length; i++) {
@@ -289,6 +391,16 @@ class App extends React.PureComponent<IAppProps> {
       for (let x = 0; x < row.length; x++) {
         const cell = row[x];
         if (!cell.blocked) {
+          let preview = null;
+          let previewOpacity = 1.0;
+          if (cell.turret === null && cell == this.hoveredCell && selectedTurretTypeData.cost <= this.gold) {
+            preview = selectedTurretTypeData.icon;
+            previewOpacity = 0.4;
+          }
+          if (cell.turret !== null) {
+            preview = TURRET_DATA[cell.turret.type].icon;
+          }
+
           cells.push(<div
             key={`${x},${y}`}
             style={{
@@ -300,7 +412,22 @@ class App extends React.PureComponent<IAppProps> {
               width: CELL_SIZE - 1,
               height: CELL_SIZE - 1,
             }}
-          />);
+            onClick={() => this.clickCell(x, y)}
+          >
+            {preview !== null && <div style={{
+              opacity: previewOpacity,
+              width: CELL_SIZE - 1,
+              height: CELL_SIZE - 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 30,
+              backgroundColor: '#444',
+              userSelect: 'none',
+            }}>
+              {preview}
+            </div>}
+          </div>);
         }
       }
     }
@@ -312,12 +439,13 @@ class App extends React.PureComponent<IAppProps> {
         key={enemy.id}
         style={{
           position: 'absolute',
-          left: pos[0] - 10,
-          top: pos[1] - 10,
-          width: 20,
-          height: 20,
-          background: '#f00',
-          borderRadius: 10,
+          left: pos[0] - enemy.size,
+          top: pos[1] - enemy.size,
+          width: 2*enemy.size,
+          height: 2*enemy.size,
+          border: '1px solid black',
+          background: enemy.color,
+          borderRadius: enemy.size,
           zIndex: 5,
         }}
       />);
@@ -326,7 +454,9 @@ class App extends React.PureComponent<IAppProps> {
     function colorText(color: string, text: string | number) {
       return <span style={{ color, textShadow: '0 0 2px #000' }}>{text}</span>;
     }
-    let progressText = ((100.0 * this.waveTimer / this.waveTimerMax).toFixed(1) + '%').padStart(7);
+    let progressText = (Math.min(100.0 * this.waveTimer / this.waveTimerMax, 99.9).toFixed(1) + '%').padStart(6);
+
+    let rightBarContents = null;
 
     return <div>
       {/* Top bar */}
@@ -343,7 +473,7 @@ class App extends React.PureComponent<IAppProps> {
       }}>
         <div style={{
           marginLeft: 20,
-          width: 400,
+          width: 350,
         }}>
           <div>Gold:&nbsp; {colorText('yellow', this.gold)}</div>
           <div>Lives: {colorText('red', this.hp)}</div>
@@ -375,34 +505,106 @@ class App extends React.PureComponent<IAppProps> {
         </div>
       </div>
 
-      {/* Main field */}
       <div style={{
         width: this.props.layout.width,
-        height: this.props.layout.height - 100,
-        background: this.gameState === 'dead' ? '#363' : '#484',
+        position: 'absolute',
         top: 100,
-        position: 'relative',
+        display: 'flex',
       }}>
-        {knots}
-        {cells}
-        {enemies}
-        <svg
-          width={this.props.layout.width}
-          height={this.props.layout.height}
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-          }}
-        >
-          <path
-            d={this.level.svgPath}
-            fill="none"
-            stroke="#373"
-            strokeWidth="20"
-          />
-        </svg>
+        {/* Main field */}
+        <div style={{
+          width: this.props.layout.width - 400,
+          height: this.props.layout.height - 100,
+          background: this.gameState === 'dead' ? '#363' : '#484',
+          position: 'relative',
+        }}>
+          {knots}
+          {cells}
+          {enemies}
+          <svg
+            width={this.props.layout.width - 400}
+            height={this.props.layout.height - 100}
+            viewBox={`0 0 ${WIDTH - 400} ${HEIGHT - 100}`}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              pointerEvents: 'none',
+            }}
+          >
+            <path
+              d={this.level.svgPath}
+              fill="none"
+              stroke="#373"
+              strokeWidth="20"
+            />
+          </svg>
+        </div>
+
+        {/* Right bar */}
+        <div style={{
+          width: 400,
+          height: this.props.layout.height - 100,
+          boxSizing: 'border-box',
+          borderLeft: '1px solid black',
+          borderTop: '1px solid black',
+          padding: 10,
+          fontSize: 24,
+          background: '#3a3a3a',
+          color: '#fff',
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}>
+            {TURRET_TYPES.map((turretType, i) => {
+              const data = TURRET_DATA[turretType];
+              return <div style={{
+                height: 130,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    border: this.selectedTurretType === turretType ? '2px solid #fff' : '2px solid #111',
+                    borderRadius: 5,
+                    background: this.selectedTurretType === turretType ? '#555' : '#444',
+                    marginLeft: 10,
+                    marginTop: 10,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    // Center the text.
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 52,
+                    opacity: this.gold > data.cost ? 1 : 0.3,
+                  }}
+                  className='hoverButton'
+                  onClick={() => {
+                    this.selectedTurretType = turretType;
+                    this.forceUpdate();
+                  }}
+                >
+                  {data.icon}
+                </div>
+                <span style={{ paddingLeft: 10, userSelect: 'none' }}>{colorText(this.gold > data.cost ? 'yellow' : 'red', data.cost)}</span>
+              </div>;
+            })}
+          </div>
+
+          <div>
+            <h3>{selectedTurretTypeData.name}</h3>
+            {selectedTurretTypeData.description}
+          </div>
+
+          {rightBarContents}
+        </div>
       </div>
     </div>;
   }
