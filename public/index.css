@@ -1,0 +1,19 @@
+
+body {
+  background: #222;
+  color: white;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: monospace;
+}
+
+/* We now implement the hoverButton class, that makes an animated border when hovered. */
+
+.hoverButton {
+  box-shadow: 0 0 0 0 yellow;
+  transition: 0.2s;
+}
+
+.hoverButton:hover {
+  box-shadow: 0 0 0 5px yellow;
