@@ -812,7 +812,10 @@ class App extends React.PureComponent<IAppProps> {
   }
 
   rafLoop = (time: number) => {
-    let dt = Math.min((time - this.lastRafTime) / 1000, 0.1);
+    const elapsed = (time - this.lastRafTime) / 1000;
+    const fps = 1 / (elapsed + 1e-6);
+    document.getElementById('fps')!.textContent = fps.toFixed(1);
+    let dt = Math.min(elapsed, 0.1);
 
     let reps = this.fastMode ? 5 : 1;
     for (let rep = 0; rep < reps; rep++) {
