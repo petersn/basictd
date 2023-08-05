@@ -51,3 +51,9 @@ export function dist(a: Point, b: Point): number {
   let dy = b[1] - a[1];
   return Math.sqrt(dx * dx + dy * dy);
 }
+
+export function rotate(vec: Point, angle: number): Point {
+  let sin = Math.sin(angle);
+  let cos = Math.cos(angle);
+  return [vec[0] * cos - vec[1] * sin, vec[0] * sin + vec[1] * cos];
+}

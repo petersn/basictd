@@ -17,3 +17,9 @@ body {
 
 .hoverButton:hover {
   box-shadow: 0 0 0 5px yellow;
+}
+
+.hoverIncreaseZ:hover {
+  z-index: 1;
+}
+

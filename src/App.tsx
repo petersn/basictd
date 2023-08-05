@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
-import { Point, interpolate, dist } from './Interpolate';
+import { Point, interpolate, dist, rotate } from './Interpolate';
 
 const WIDTH = 1600;
 const HEIGHT = 1000;
@@ -40,6 +40,12 @@ type GameState = 'wave' | 'build' | 'dead';
 type TurretType = 'basic' | 'slow' | 'splash' | 'magic' | 'laser' | 'wall' | 'repair' | 'miner';
 const TURRET_TYPES: TurretType[] = [ 'basic', 'slow', 'splash', 'magic', 'laser', 'wall', 'repair', 'miner' ];
 
+interface Upgrade {
+  name: string;
+  description: string;
+  cost: number;
+}
+
 interface TurretData {
   name: string;
   description: string;
@@ -47,18 +53,55 @@ interface TurretData {
   cost: number;
   hp: number;
   range: number;
+  damage: number;
   cooldown: number;
+  maxUpgrades: number;
+  upgrades: Upgrade[];
 }
 
 const TURRET_DATA: { [key in TurretType]: TurretData } = {
   basic: {
     name: 'Basic Turret',
-    description: 'Shoots a single bullet at a time.',
+    description: 'Shoots a 1 damage bullet every second.',
     icon: '🔫',
-    cost: 150,
+    cost: 80,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 3,
+    upgrades: [
+      {
+        name: 'Range',
+        description: 'Increases range by 3 tiles.',
+        cost: 100,
+      },
+      {
+        name: 'Velocity',
+        description: 'Increases bullet velocity to 3x.',
+        cost: 120,
+      },
+      {
+        name: 'Rapid Fire',
+        description: 'Increases fire rate by 50%.',
+        cost: 150,
+      },
+      {
+        name: 'Piercing',
+        description: 'Bullets can hit one additional enemy.',
+        cost: 240,
+      },
+      {
+        name: 'Damage',
+        description: 'Increases damage from 1 to 2.',
+        cost: 160,
+      },
+      {
+        name: 'Trishot',
+        description: 'Shoots three bullets in a small spread.',
+        cost: 300,
+      },
+    ],
   },
   slow: {
     name: 'Slow Turret',
@@ -67,7 +110,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 8,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   splash: {
     name: 'Splash Turret',
@@ -76,7 +124,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 12,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   magic: {
     name: 'Magic Turret',
@@ -85,7 +138,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 20,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   laser: {
     name: 'Laser Turret',
@@ -94,7 +152,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 30,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   wall: {
     name: 'Wall',
@@ -103,7 +166,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 5,
     hp: 10,
     range: 0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   repair: {
     name: 'Repair Turret',
@@ -112,7 +180,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 12,
     hp: 5,
     range: 3.0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
   miner: {
     name: 'Miner',
@@ -121,14 +194,27 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 5,
     hp: 5,
     range: 0,
+    damage: 1,
     cooldown: 1.0,
+    maxUpgrades: 0,
+    upgrades: [
+      
+    ],
   },
 };
 
-interface Turret {
+class Turret {
   hp: number;
   type: TurretType;
   cooldown: number;
+  upgrades: string[];
+
+  constructor(type: TurretType) {
+    this.hp = TURRET_DATA[type].hp;
+    this.type = type;
+    this.cooldown = 0;
+    this.upgrades = [];
+  }
 }
 
 interface CellContents {
@@ -177,10 +263,11 @@ class Bullet {
   damage: number = 1;
   hp: number = 1;
   color: string = 'yellow';
+  alreadyHit: Enemy[] = [];
 
   constructor(pos: Point, targetPos: Point, targetEnemy: Enemy | null, speed: number) {
     this.id = Math.random().toString() + Math.random().toString();
-    this.pos = pos;
+    this.pos = [pos[0], pos[1]];
     this.speed = speed;
     const dx = targetPos[0] - pos[0];
     const dy = targetPos[1] - pos[1];
@@ -196,9 +283,12 @@ class Bullet {
       this.pos[1] += this.targetDelta[1] * dt / substeps;
       // Try to find an enemy to hit.
       for (const enemy of app.enemies) {
+        if (this.alreadyHit.includes(enemy))
+          continue;
         if (dist(this.pos, enemy.pos) <= enemy.size + this.size) {
           enemy.hp -= this.damage;
-          this.hp = 0;
+          this.hp -= 1;
+          this.alreadyHit.push(enemy);
           break;
         }
       }
@@ -277,9 +367,10 @@ class App extends React.PureComponent<IAppProps> {
   enemies: Enemy[] = [];
   bullets: Bullet[] = [];
   level: Level;
-  gold: number = 250;
+  gold: number = 200;
   wave: number = 1;
   hp: number = 100;
+  fastMode: boolean = false;
   waveTimer: number = 0;
   waveTimerMax: number = 1;
   selectedTurretType: TurretType | null = null;
@@ -333,13 +424,41 @@ class App extends React.PureComponent<IAppProps> {
     this.enemySchedule = [];
     const enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
     const enemyCount = this.waveTimerMax * enemyDensity;
-    for (let i = 0; i < enemyCount; i++) {
-      const lerp = i / enemyCount;
-      const hp = Math.floor(1 + this.wave * 0.2);
-      const gold = hp;
-      const size = 14 + hp * 0.5;
-      this.enemySchedule.push([ lerp * this.waveTimerMax, new Enemy(2.0, hp, gold, 'red', size) ]);
+    let t = 0;
+    while (t < this.waveTimerMax) {
+      // Generate a subwave description.
+      let validHps: [string, number, number][] = [['red', 1, 14]];
+      if (this.wave >= 5) validHps.push(['blue', 2, 16]);
+      if (this.wave >= 10) validHps.push(['green', 5, 18]);
+      if (this.wave >= 20) validHps.push(['yellow', 20, 20]);
+      if (this.wave >= 30) validHps.push(['black', 100, 25]);
+      // Pick a random mixture of enemy types.
+      const mixture: [string, number, number, number][] = [];
+      for (let i = 0; i < 3; i++) {
+        const [color, hp, size] = validHps[Math.floor(Math.random() * validHps.length)];
+        const speed = 2.0 + Math.random() * 1.0;
+        mixture.push([color, hp, size, speed]);
+      }
+
+      const subwaveDuration = 5.0 + Math.random() * 3.0;
+      const waveEnd = Math.min(t + subwaveDuration, this.waveTimerMax);
+      let i = 0;
+      while (t < waveEnd) {
+        const [color, hp, size, speed] = mixture[i % mixture.length];
+        this.enemySchedule.push([ t, new Enemy(speed, hp, hp, color, size) ]);
+        t += 1.0 / enemyDensity;
+        i++;
+      }
+      t += 1.0 + Math.random();
     }
+
+    // for (let i = 0; i < enemyCount; i++) {
+    //   //const lerp = i / enemyCount;
+    //   //const hp = Math.floor(1 + this.wave * 0.2);
+    //   //const gold = hp;
+    //   //const size = 14 + hp * 0.5;
+    //   //this.enemySchedule.push([ lerp * this.waveTimerMax, new Enemy(2.0, hp, gold, 'red', size) ]);
+    // }
     this.enemySchedule.sort((a, b) => a[0] - b[0]);
   }
 
@@ -354,11 +473,7 @@ class App extends React.PureComponent<IAppProps> {
         const selectedTurretTypeData = TURRET_DATA[this.selectedTurretType];
         // Buying
         if (this.gold >= selectedTurretTypeData.cost) {
-          cell.turret = {
-            hp: selectedTurretTypeData.hp,
-            type: this.selectedTurretType,
-            cooldown: 0,
-          }
+          cell.turret = new Turret(this.selectedTurretType);
           this.gold -= selectedTurretTypeData.cost;
         }
       }
@@ -370,83 +485,141 @@ class App extends React.PureComponent<IAppProps> {
     }
   }
 
+  clickUpgradeButton = (upgrade: Upgrade) => {
+    if (
+      this.selectedCell !== null &&
+      this.selectedCell.turret !== null &&
+      !this.selectedCell.turret.upgrades.includes(upgrade.name) &&
+      this.gold >= upgrade.cost &&
+      this.selectedCell.turret.upgrades.length <= TURRET_DATA[this.selectedCell.turret.type].maxUpgrades
+    ) {
+      this.selectedCell.turret.upgrades.push(upgrade.name);
+      this.gold -= upgrade.cost;
+    }
+  }
+
+  computeTurretRange = (turret: Turret): number => {
+    const data = TURRET_DATA[turret.type];
+    let range = data.range;
+    if (turret.upgrades.includes('Range'))
+      range += 3;
+    return range;
+  }
+
+  computeTurretCooldown = (turret: Turret): number => {
+    const data = TURRET_DATA[turret.type];
+    let cooldown = data.cooldown;
+    if (turret.upgrades.includes('Rapid Fire'))
+      cooldown *= 0.6666;
+    return cooldown;
+  }
+
+  makeTurretBullets = (turret: Turret, pos: Point, furthestTarget: Enemy): Bullet[] => {
+    const data = TURRET_DATA[turret.type];
+    let speed = 500.0;
+    if (turret.upgrades.includes('Velocity'))
+      speed *= 3.0;
+    const bullets = [
+      new Bullet(pos, furthestTarget.pos, furthestTarget, speed),
+    ];
+    if (turret.upgrades.includes('Trishot')) {
+      for (const turn of [-1, +1]) {
+        const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed);
+        b.targetDelta = rotate(b.targetDelta, turn * Math.PI / 8);
+        bullets.push(b);
+      }
+    }
+    for (const bullet of bullets) {
+      bullet.damage = data.damage;
+      if (turret.upgrades.includes('Piercing'))
+        bullet.hp += 1;
+      if (turret.upgrades.includes('Damage'))
+        bullet.damage += 1;
+    }
+    return bullets;
+  }
+
   rafLoop = (time: number) => {
-    const dt = Math.min((time - this.lastRafTime) / 1000, 0.1);
-    // Update path.
-    if (this.clickedKnot !== null) {
-      const knot = this.path[this.clickedKnot.index];
-      knot[0] = Math.round(this.mousePos[0]);
-      knot[1] = Math.round(this.mousePos[1] - 100);
-      this.level = new Level(this.path);
-      console.log('update:', JSON.stringify(this.path));
-    }
-    // Update wave.
-    if (this.gameState === 'wave') {
-      this.waveTimer += dt;
-      while (this.enemySchedule.length > 0 && this.enemySchedule[0][0] <= this.waveTimer) {
-        const [ _, enemy ] = this.enemySchedule.shift()!;
-        this.enemies.push(enemy);
-      }
-      if (this.waveTimer >= this.waveTimerMax) {
-        this.waveTimer = 0;
-        this.wave++;
-        this.gameState = 'build';
-      }
-    }
-    if (this.hp <= 0) {
-      this.gameState = 'dead';
-    }
+    let dt = Math.min((time - this.lastRafTime) / 1000, 0.1);
 
-    // Update enemies.
-    for (let i = 0; i < this.enemies.length; i++) {
-      const enemy = this.enemies[i];
-      enemy.update(this, dt);
-      if (enemy.hp <= 0) {
-        this.enemies.splice(i, 1);
-        i--;
-        this.gold += enemy.gold;
+    let reps = this.fastMode ? 5 : 1;
+    for (let rep = 0; rep < reps; rep++) {
+      // Update path.
+      if (this.clickedKnot !== null) {
+        const knot = this.path[this.clickedKnot.index];
+        knot[0] = Math.round(this.mousePos[0]);
+        knot[1] = Math.round(this.mousePos[1] - 100);
+        this.level = new Level(this.path);
+        console.log('update:', JSON.stringify(this.path));
       }
-    }
+      // Update wave.
+      if (this.gameState === 'wave') {
+        this.waveTimer += dt;
+        while (this.enemySchedule.length > 0 && this.enemySchedule[0][0] <= this.waveTimer) {
+          const [ _, enemy ] = this.enemySchedule.shift()!;
+          this.enemies.push(enemy);
+        }
+        if (this.waveTimer >= this.waveTimerMax) {
+          this.waveTimer = 0;
+          this.wave++;
+          this.gameState = 'build';
+        }
+      }
+      if (this.hp <= 0) {
+        this.gameState = 'dead';
+      }
 
-    // Update all turrets.
-    for (let y = 0; y < this.level.grid.length; y++) {
-      const row = this.level.grid[y];
-      for (let x = 0; x < row.length; x++) {
-        const cell = row[x];
-        if (cell.turret !== null) {
-          const turret = cell.turret;
-          turret.cooldown = Math.max(0, turret.cooldown - dt);
-          const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
-          if (turret.cooldown <= 0) {
-            // Find all valid targets.
-            let furthestT = -1.0;
-            let furthestTarget = null;
-            for (const enemy of this.enemies) {
-              const d = dist(pos, enemy.pos) - enemy.size - 10.0;
-              if (d <= TURRET_DATA[turret.type].range * CELL_SIZE) {
-                if (enemy.t > furthestT) {
-                  furthestT = enemy.t;
-                  furthestTarget = enemy;
+      // Update enemies.
+      for (let i = 0; i < this.enemies.length; i++) {
+        const enemy = this.enemies[i];
+        enemy.update(this, dt);
+        if (enemy.hp <= 0) {
+          this.enemies.splice(i, 1);
+          i--;
+          this.gold += enemy.gold;
+        }
+      }
+
+      // Update all turrets.
+      for (let y = 0; y < this.level.grid.length; y++) {
+        const row = this.level.grid[y];
+        for (let x = 0; x < row.length; x++) {
+          const cell = row[x];
+          if (cell.turret !== null) {
+            const turret = cell.turret;
+            turret.cooldown = Math.max(0, turret.cooldown - dt);
+            const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
+            if (turret.cooldown <= 0) {
+              // Find all valid targets.
+              let furthestT = -1.0;
+              let furthestTarget = null;
+              const range = this.computeTurretRange(turret) * CELL_SIZE;
+              for (const enemy of this.enemies) {
+                const d = dist(pos, enemy.pos) - enemy.size - 10.0;
+                if (d <= range) {
+                  if (enemy.t > furthestT) {
+                    furthestT = enemy.t;
+                    furthestTarget = enemy;
+                  }
                 }
               }
-            }
-            if (furthestTarget !== null) {
-              turret.cooldown = TURRET_DATA[turret.type].cooldown;
-              const bullet = new Bullet(pos, furthestTarget.pos, furthestTarget, 500.0);
-              this.bullets.push(bullet);
+              if (furthestTarget !== null) {
+                turret.cooldown = this.computeTurretCooldown(turret);
+                this.bullets.push(...this.makeTurretBullets(turret, pos, furthestTarget));
+              }
             }
           }
         }
       }
-    }
 
-    // Update all bullets.
-    for (let i = 0; i < this.bullets.length; i++) {
-      const bullet = this.bullets[i];
-      bullet.update(this, dt);
-      if (bullet.hp <= 0) {
-        this.bullets.splice(i, 1);
-        i--;
+      // Update all bullets.
+      for (let i = 0; i < this.bullets.length; i++) {
+        const bullet = this.bullets[i];
+        bullet.update(this, dt);
+        if (bullet.hp <= 0) {
+          this.bullets.splice(i, 1);
+          i--;
+        }
       }
     }
 
@@ -529,6 +702,7 @@ class App extends React.PureComponent<IAppProps> {
       for (let x = 0; x < row.length; x++) {
         const cell = row[x];
         if (!cell.blocked) {
+          let upgradeCount = 0;
           let preview = null;
           let previewOpacity = 1.0;
           if (cell.turret === null && cell == this.hoveredCell && selectedTurretTypeData !== null && selectedTurretTypeData.cost <= this.gold) {
@@ -540,6 +714,7 @@ class App extends React.PureComponent<IAppProps> {
             if (cell === this.selectedCell) {
               shownTurretTypeData = TURRET_DATA[cell.turret.type];
             }
+            upgradeCount = cell.turret.upgrades.length;
           }
 
           cells.push(<div
@@ -567,8 +742,16 @@ class App extends React.PureComponent<IAppProps> {
               fontSize: 30,
               backgroundColor: '#444',
               userSelect: 'none',
+              position: 'relative',
             }}>
               {preview}
+              {upgradeCount > 0 && <div style={{
+                position: 'absolute',
+                left: 0,
+                bottom: 0,
+                fontSize: 14,
+                color: '#0f0',
+              }}>+{upgradeCount}</div>}
             </div>}
           </div>);
           // Push a range indicator, if hovered.
@@ -577,7 +760,7 @@ class App extends React.PureComponent<IAppProps> {
             if (selectedTurretTypeData !== null && this.gold < selectedTurretTypeData.cost) {
               offerRange = 0;
             }
-            const range = cell.turret !== null ? TURRET_DATA[cell.turret.type].range : offerRange;
+            const range = cell.turret !== null ? this.computeTurretRange(cell.turret) : offerRange;
             if (range > 0) {
               cells.push(<div
                 key={`${x},${y}-range`}
@@ -664,6 +847,25 @@ class App extends React.PureComponent<IAppProps> {
         </div>
 
         <div style={{ flex: 1 }} />
+
+        <div style={{
+          border: '1px solid black',
+          borderRadius: 5,
+          backgroundColor: '#252525',
+          width: 80,
+          height: 80,
+          marginRight: 20,
+          userSelect: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 50,
+        }} onClick={() => this.fastMode = !this.fastMode}
+          className='hoverButton'
+        >
+          <span style={{ marginTop: -5 }}>{this.fastMode ? '▶▶' : '▶'}</span>
+        </div>
 
         <div>
           <div>Wave: {colorText('cyan', this.wave)}</div>
@@ -792,9 +994,51 @@ class App extends React.PureComponent<IAppProps> {
           {shownTurretTypeData !== null && <div>
             <h3>{shownTurretTypeData.name}</h3>
             {shownTurretTypeData.description}
+            <div
+              style={{ display: 'flex', flexDirection: 'column', marginTop: 20 }}
+            >
+              {shownTurretTypeData.upgrades.map((upgrade, i) => {
+                let clickable = false;
+                let have = false;
+                let maxedOut = null;
+                if (
+                  this.selectedCell !== null &&
+                  this.selectedCell.turret !== null
+                ) {
+                  //if (this.gold >= upgrade.cost) {
+                  clickable = true;
+                  //}
+                  if (this.selectedCell.turret.upgrades.includes(upgrade.name)) {
+                    have = true;
+                    clickable = false;
+                  }
+                  if (this.selectedCell.turret.upgrades.length >= TURRET_DATA[this.selectedCell.turret.type].maxUpgrades) {
+                    maxedOut = <span style={{ fontSize: 14, opacity: 0.5 }}>Maxed out</span>;
+                  }
+                }
+
+                return <div
+                  style={{
+                    border: '1px solid #111',
+                    padding: 10,
+                    userSelect: 'none',
+                    background: have ? '#222' : '#333',
+                    cursor: clickable ? 'pointer' : 'default',
+                  }}
+                  className={clickable ? 'hoverButton hoverIncreaseZ' : 'hoverIncreaseZ'}
+                  onClick={() => this.clickUpgradeButton(upgrade)}
+                >
+                  {upgrade.name}
+                  <span style={{ float: 'right' }}>{maxedOut ? maxedOut : colorText(this.gold >= upgrade.cost ? 'yellow' : 'red', upgrade.cost)}</span>
+                  <div style={{ fontSize: 14 }}>
+                    {upgrade.description}
+                  </div>
+                </div>;
+              })}
+            </div>
           </div>}
 
-          {rightBarContents}
+          {/*rightBarContents*/}
         </div>
       </div>
     </div>;
