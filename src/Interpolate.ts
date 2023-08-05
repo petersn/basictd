@@ -57,3 +57,24 @@ export function rotate(vec: Point, angle: number): Point {
   let cos = Math.cos(angle);
   return [vec[0] * cos - vec[1] * sin, vec[0] * sin + vec[1] * cos];
 }
+
+export function turnTowards(from: number, to: number, maxAmount: number): number {
+  function normalizeAngle(x: number): number {
+    x = x % (2 * Math.PI);
+    if (x < -Math.PI) x += 2 * Math.PI;
+    if (x > Math.PI) x -= 2 * Math.PI;
+    return x;
+  }
+
+  let delta = normalizeAngle(to - from);
+
+  // Ensure we do not turn more than maxAmount
+  delta = Math.max(-maxAmount, Math.min(maxAmount, delta));
+
+  let newAngle = from + delta;
+
+  // Normalize the angle to be between -π and π
+  newAngle = normalizeAngle(newAngle);
+
+  return newAngle;
+}

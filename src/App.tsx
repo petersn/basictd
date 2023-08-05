@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
-import { Point, interpolate, dist, rotate } from './Interpolate';
+import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
 const WIDTH = 1600;
 const HEIGHT = 1000;
@@ -38,8 +38,8 @@ const PATH: Point[] = [
 
 type GameState = 'wave' | 'build' | 'dead';
 
-type TurretType = 'basic' | 'slow' | 'splash' | 'magic' | 'laser' | 'wall' | 'repair' | 'miner';
-const TURRET_TYPES: TurretType[] = [ 'basic', 'slow', 'splash', 'magic', 'laser', 'wall', 'repair', 'miner' ];
+type TurretType = 'basic' | 'slow' | 'splash' | 'zapper' | 'fire' | 'laser' | 'wall' | 'repair';
+const TURRET_TYPES: TurretType[] = [ 'basic', 'slow', 'splash', 'zapper', 'fire', 'laser', 'wall', 'repair' ];
 
 interface Upgrade {
   name: string;
@@ -107,7 +107,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     ],
   },
   slow: {
-    name: 'Snow Turret',
+    name: 'Snow Machine',
     description: 'Slows enemies down for 3 seconds, once every 5 seconds.',
     icon: '❄️',
     cost: 180,
@@ -137,7 +137,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   splash: {
     name: 'Cannon',
-    description: 'Shoots a bomb that explodes, dealing 2 damage to up to 10 units.',
+    description: 'Shoots an explosive every 8 seconds, dealing 2 damage to up to 10 units.',
     icon: '💣', // 💥
     cost: 240,
     hp: 5,
@@ -150,57 +150,86 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Distant Bombardment',
         description: 'Increase min and max range by 2 tiles.',
-        cost: 350,
-      },
-      {
-        name: 'High Explosives',
-        description: 'Doubles damage from 2 to 4.',
-        cost: 640,
-      },
-      {
-        name: 'Very High Explosives',
-        description: 'Doubles damage again.',
-        cost: 2000,
-      },
-      {
-        name: 'Rapid Fire',
-        description: 'Doubles rate of fire.',
-        cost: 850,
-      },
-      {
-        name: 'Cluster Bomb',
-        description: 'Can damage up to 30 units.',
-        cost: 1000,
-      },
-      {
-        name: 'Large Area',
-        description: 'Increases explosion radius by 70%.',
-        cost: 900,
+        cost: 200,
       },
       {
         name: 'Missiles',
         description: 'Increases projectile velocity to 3x.',
-        cost: 650,
+        cost: 250,
+      },
+      {
+        name: 'Large Area',
+        description: 'Increases explosion radius by 70%.',
+        cost: 450,
+      },
+      {
+        name: 'High Explosives',
+        description: 'Doubles damage.',
+        cost: 400,
+      },
+      {
+        name: 'Very High Explosives',
+        description: 'Doubles damage again.',
+        cost: 750,
+      },
+      {
+        name: 'Rapid Fire',
+        description: 'Doubles rate of fire.',
+        cost: 900,
+      },
+      {
+        name: 'Cluster Bomb',
+        description: 'Can damage up to 30 units.',
+        cost: 1200,
       },
     ],
   },
-  magic: {
+  zapper: {
     name: 'Zapper',
-    description: 'Shoots lighting that deals 1, 3, or 6 damage depending on charge time.',
+    description: 'Charges up every 2 seconds, and deals n² damage when released. Max charge: 3.',
     icon: '⚡',
-    cost: 280,
+    cost: 175,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
     damage: 0,
-    cooldown: 5.0,
-    maxUpgrades: 0,
+    cooldown: 0.0, // Cooldown is controlled by recharging.
+    maxUpgrades: 3,
     upgrades: [
-
+      {
+        name: 'Capacitors',
+        description: 'Increases max charge by 3.',
+        cost: 150,
+      },
+      {
+        name: 'Batteries',
+        description: 'Increases max charge by another 3.',
+        cost: 250,
+      },
+      {
+        name: 'Superconductors',
+        description: 'Doubles recharge rate.',
+        cost: 350,
+      },
+      {
+        name: 'Targeting Computer',
+        description: 'Never fires at enemies with <4 HP.',
+        cost: 400,
+      },
+      {
+        name: 'Chain Lightning',
+        description: 'Lightning bounces to another enemy.',
+        cost: 450,
+      },
+      {
+        name: 'Lightning Storm',
+        description: 'Lightning bounces to yet another enemy.',
+        cost: 850,
+      },
     ],
   },
-  laser: {
-    name: 'Laser Turret',
+  fire: {
+    name: 'Flamethrower',
     description: 'Shoots a laser that can hit multiple enemies.',
     icon: '🔥',
     cost: 30,
@@ -214,9 +243,53 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
 
     ],
   },
+  laser: {
+    name: 'Laser',
+    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 4 damage per second.',
+    icon: '📡',
+    cost: 400,
+    hp: 5,
+    range: 3.5,
+    minRange: 0.0,
+    damage: 1,
+    cooldown: 0.0,
+    maxUpgrades: 4,
+    upgrades: [
+      {
+        name: 'Lubricant',
+        description: 'Doubles swivel speed.',
+        cost: 200,
+      },
+      {
+        name: 'Range',
+        description: 'Increases range by 3 tiles.',
+        cost: 400,
+      },
+      {
+        name: 'Better Optics',
+        description: 'Doubles damage per second.',
+        cost: 450,
+      },
+      {
+        name: 'Best Optics',
+        description: 'Doubles damage per second again.',
+        cost: 900,
+      },
+      {
+        name: 'X-ray Beam',
+        description: 'Can pass through enemies, damaging up to 3 at once.',
+        cost: 1150,
+      },
+      {
+        name: 'Sweeper',
+        description: 'Simply always swivels clockwise, but quadruples damage per second.',
+        cost: 1500,
+      },
+    ],
+  },
   wall: {
     name: 'Wall',
-    description: 'Blocks enemies.',
+    description: 'Blocks enemy attacks.',
     icon: '🧱',
     cost: 20,
     hp: 10,
@@ -244,21 +317,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
 
     ],
   },
-  miner: {
-    name: 'Miner',
-    description: 'Mines gold.',
-    icon: '⛏️',
-    cost: 5,
-    hp: 5,
-    range: 0,
-    minRange: 0.0,
-    damage: 1,
-    cooldown: 1.0,
-    maxUpgrades: 0,
-    upgrades: [
-
-    ],
-  },
 };
 
 class Turret {
@@ -267,6 +325,9 @@ class Turret {
   cooldown: number;
   upgrades: string[];
   investedGold: number = 0;
+  zapCharge: number = 0;
+  heading: number = 2 * Math.PI * Math.random();
+  laserDamageAccumulator: number = 0;
 
   constructor(type: TurretType) {
     const data = TURRET_DATA[type];
@@ -293,6 +354,7 @@ class Enemy {
   color: string;
   size: number;
   cold: number = 0.0;
+  scratch: number = 0;
 
   constructor(speed: number, hp: number, gold: number, color: string, size: number) {
     this.id = Math.random().toString() + Math.random().toString();
@@ -378,6 +440,7 @@ class Bullet {
   color: string = 'yellow';
   bombDesc: BombDesc | null = null;
   alreadyHit: Enemy[] = [];
+  laser: number = 0;
 
   constructor(
     pos: Point,
@@ -400,15 +463,22 @@ class Bullet {
     let substeps = Math.max(1, Math.round(this.speed / 250.0));
     if (this.bombDesc?.trail && Math.random() < 0.4)
       app.effects.push(new GroundEffect(this.pos, 10.0, -20, '#aaa'));
+    if (this.laser) {
+      substeps = this.laser / this.size;
+      dt = this.laser;
+    }
     for (let substep = 0; substep < substeps; substep++) {
       this.pos[0] += this.targetDelta[0] * dt / substeps;
       this.pos[1] += this.targetDelta[1] * dt / substeps;
+      if (this.laser) {
+        app.effects.push(new GroundEffect([this.pos[0], this.pos[1]], this.size, -100, '#0f0'));
+      }
       // Try to find an enemy to hit, if we're not a bomb.
       if (this.bombDesc === null) {
         for (const enemy of app.enemies) {
-          if (this.alreadyHit.includes(enemy))
-            continue;
           if (dist(this.pos, enemy.pos) <= enemy.size + this.size) {
+            if (this.alreadyHit.includes(enemy))
+              continue;
             enemy.hp -= this.damage;
             this.hp -= 1;
             this.alreadyHit.push(enemy);
@@ -424,7 +494,7 @@ class Bullet {
             if (dist(this.pos, enemy.pos) <= enemy.size + this.bombDesc.radius) {
               console.log('hit', this.bombDesc);
               enemy.hp -= this.bombDesc.damage;
-              hitsRemaining -= 1;
+              hitsRemaining--;
               if (hitsRemaining === 0)
                 break;
             }
@@ -447,6 +517,8 @@ class Bullet {
         this.hp = 0;
       }
     }
+    if (this.laser)
+      this.hp = 0;
   }
 }
 
@@ -640,7 +712,7 @@ class App extends React.PureComponent<IAppProps> {
       this.selectedCell.turret !== null &&
       !this.selectedCell.turret.upgrades.includes(upgrade.name) &&
       this.gold >= upgrade.cost &&
-      this.selectedCell.turret.upgrades.length <= TURRET_DATA[this.selectedCell.turret.type].maxUpgrades
+      this.selectedCell.turret.upgrades.length < TURRET_DATA[this.selectedCell.turret.type].maxUpgrades
     ) {
       this.selectedCell.turret.upgrades.push(upgrade.name);
       this.selectedCell.turret.investedGold += upgrade.cost;
@@ -654,6 +726,7 @@ class App extends React.PureComponent<IAppProps> {
     if (cell.turret !== null) {
       this.gold += Math.round(cell.turret.investedGold * SELL_FRACTION);
       cell.turret = null;
+      this.selectedCell = null;
     }
   }
 
@@ -726,10 +799,14 @@ class App extends React.PureComponent<IAppProps> {
     }
     for (const bullet of bullets) {
       bullet.damage = data.damage;
-      if (turret.upgrades.includes('Piercing'))
+      if (turret.upgrades.includes('Piercing')) {
         bullet.hp += 1;
-      if (turret.upgrades.includes('Damage'))
+        bullet.color = '#f84';
+      }
+      if (turret.upgrades.includes('Damage')) {
         bullet.damage += 1;
+        bullet.size *= 1.5;
+      }
     }
     return bullets;
   }
@@ -797,6 +874,20 @@ class App extends React.PureComponent<IAppProps> {
             const range = this.computeTurretRange(turret) * CELL_SIZE;
             const minRange = this.computeTurretMinRange(turret) * CELL_SIZE;
 
+            if (turret.type === 'zapper') {
+              let maxCharge = 3;
+              if (turret.upgrades.includes('Capacitors'))
+                maxCharge += 3;
+              if (turret.upgrades.includes('Batteries'))
+                maxCharge += 3;
+              let rate = 0.5;
+              if (turret.upgrades.includes('Superconductors'))
+                rate *= 2.0;
+              // We only recharge when there are enemies on screen.
+              if (this.enemies.length > 0)
+                turret.zapCharge = Math.min(maxCharge, turret.zapCharge + rate * dt);
+            }
+
             if (turret.cooldown <= 0) {
               // Perform special behavior for each turret type.
               if (turret.type === 'slow') {
@@ -820,21 +911,99 @@ class App extends React.PureComponent<IAppProps> {
               }
 
               // Find all valid targets.
-              let furthestT = -1.0;
-              let furthestTarget = null;
-              for (const enemy of this.enemies) {
-                const d = dist(pos, enemy.pos) - enemy.size - 10.0;
-                if (minRange <= d && d <= range) {
-                  if (enemy.t > furthestT) {
-                    furthestT = enemy.t;
-                    furthestTarget = enemy;
+              let clearZapCharge = false;
+              const doAttackFrom = (self: App, pos: Point, chainCount: number, scratch: number) => {
+                let furthestT = -1.0;
+                let furthestTarget = null;
+                const haveTargetingComputer = turret.upgrades.includes('Targeting Computer');
+                for (const enemy of self.enemies) {
+                  if (haveTargetingComputer && enemy.hp < 4)
+                    continue;
+                  if (enemy.scratch === scratch)
+                    continue;
+                  const d = dist(pos, enemy.pos) - enemy.size - 10.0;
+                  if (minRange <= d && d <= range) {
+                    if (enemy.t > furthestT) {
+                      if (chainCount != 2)
+                      furthestT = enemy.t;
+                      furthestTarget = enemy;
+                    }
                   }
                 }
-              }
-              if (furthestTarget !== null) {
-                turret.cooldown = this.computeTurretCooldown(turret);
-                this.bullets.push(...this.makeTurretBullets(turret, pos, furthestTarget));
-              }
+                if (furthestTarget !== null) {
+                  if (chainCount != 2)
+                  turret.cooldown = self.computeTurretCooldown(turret);
+                  // If we're a zapper, zap the target.
+                  if (turret.type === 'zapper') {
+                    if (turret.zapCharge < 1.0)
+                      return;
+                    const zapAmount = Math.floor(turret.zapCharge);
+                    clearZapCharge = true;
+                    for (let i = 0; i < 30; i++) {
+                      const lerp = i / 29;
+                      const lerpPos: Point = [
+                        lerp * pos[0] + (1 - lerp) * furthestTarget.pos[0] + (Math.random() - 0.5) * 10,
+                        lerp * pos[1] + (1 - lerp) * furthestTarget.pos[1] + (Math.random() - 0.5) * 10,
+                      ];
+                      self.effects.push(new GroundEffect(lerpPos, 15 * Math.sqrt(zapAmount), -50, '#ff0'));
+                    }
+                    furthestTarget.hp -= zapAmount * zapAmount;
+                    if (chainCount > 0) {
+                      furthestTarget.scratch = scratch;
+                      doAttackFrom(self, furthestTarget.pos, chainCount - 1, scratch);
+                    }
+                  } else if (turret.type === 'laser') {
+                    // Swivel towards the target.
+                    const angleToTarget = Math.atan2(furthestTarget.pos[1] - pos[1], furthestTarget.pos[0] - pos[0]);
+                    let laserDamageRate = 4.0;
+                    if (turret.upgrades.includes('Better Optics'))
+                      laserDamageRate *= 2.0;
+                    if (turret.upgrades.includes('Best Optics'))
+                      laserDamageRate *= 2.0;
+                    let swivelRate = 0.2;
+                    if (turret.upgrades.includes('Lubricant'))
+                      swivelRate *= 2.0;
+                    if (turret.upgrades.includes('Sweeper')) {
+                      laserDamageRate *= 4.0;
+                      turret.heading += swivelRate * dt;
+                      turret.heading %= Math.PI * 2;
+                    } else {
+                      turret.heading = turnTowards(turret.heading, angleToTarget, swivelRate * dt);
+                    }
+                    const targetPoint: Point = [
+                      pos[0] + Math.cos(turret.heading) * range,
+                      pos[1] + Math.sin(turret.heading) * range,
+                    ];
+                    turret.laserDamageAccumulator += laserDamageRate * dt;
+                    const b = new Bullet(pos, targetPoint, furthestTarget, 1.0);
+                    b.size = 10.0;
+                    b.damage = 5.0;
+                    b.color = '#0f0';
+                    b.laser = range;
+                    b.damage = 0;
+                    if (turret.upgrades.includes('X-ray Beam')) {
+                      b.hp += 2;
+                    }
+                    if (turret.laserDamageAccumulator >= 1.0) {
+                      b.damage = Math.floor(turret.laserDamageAccumulator);
+                      turret.laserDamageAccumulator -= b.damage;
+                      b.size += 2.0 * b.damage;
+                    }
+                    self.bullets.push(b);
+                  } else {
+                    self.bullets.push(...self.makeTurretBullets(turret, pos, furthestTarget));
+                  }
+                }
+              };
+              let maxChainCount = 0;
+              if (turret.upgrades.includes('Chain Lightning'))
+                maxChainCount += 1;
+              if (turret.upgrades.includes('Lightning Storm'))
+                maxChainCount += 1;
+              const unique = Math.floor(1000000 * Math.random());
+              doAttackFrom(this, pos, maxChainCount, unique);
+              if (clearZapCharge)
+                turret.zapCharge = 0;
             }
           }
         }
@@ -931,6 +1100,7 @@ class App extends React.PureComponent<IAppProps> {
         const cell = row[x];
         if (!cell.blocked) {
           let upgradeCount = 0;
+          let zapCharge = 0;
           let preview = null;
           let previewOpacity = 1.0;
           if (cell.turret === null && cell == this.hoveredCell && selectedTurretTypeData !== null && selectedTurretTypeData.cost <= this.gold) {
@@ -943,6 +1113,7 @@ class App extends React.PureComponent<IAppProps> {
               shownTurretTypeData = TURRET_DATA[cell.turret.type];
             }
             upgradeCount = cell.turret.upgrades.length;
+            zapCharge = cell.turret.zapCharge;
           }
 
           cells.push(<div
@@ -980,6 +1151,13 @@ class App extends React.PureComponent<IAppProps> {
                 fontSize: 14,
                 color: '#0f0',
               }}>+{upgradeCount}</div>}
+              {zapCharge > 0 && <div style={{
+                position: 'absolute',
+                right: 0,
+                bottom: 0,
+                fontSize: 14,
+                color: '#ff0',
+              }}>{Math.floor(zapCharge)}</div>}
             </div>}
           </div>);
           // Push a range indicator, if hovered.
@@ -1132,7 +1310,7 @@ class App extends React.PureComponent<IAppProps> {
         }} onClick={() => this.fastMode = !this.fastMode}
           className='hoverButton'
         >
-          <span style={{ marginTop: -5 }}>{this.fastMode ? '▶▶' : '▶'}</span>
+          <span style={{ marginTop: -5 }}>{this.fastMode ? '🐇' : '🐢'}</span> {/* ▶ */}
         </div>
 
         <div>
@@ -1260,8 +1438,9 @@ class App extends React.PureComponent<IAppProps> {
             })}
           </div>
 
-          {shownTurretTypeData !== null && <div>
-            <div style={{ fontSize: '110%', fontWeight: 'bold', marginTop: 10, marginBottom: 10 }}>{shownTurretTypeData.name}</div>
+          {shownTurretTypeData !== null && <div style={{ fontSize: 18 }}>
+            <div style={{ fontSize: 20, fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>{shownTurretTypeData.name}
+              &nbsp;<span style={{ fontWeight: 'normal', fontSize: 18 }}>(max {shownTurretTypeData.maxUpgrades} upgrades)</span></div>
             {shownTurretTypeData.description}
             <div
               style={{ display: 'flex', flexDirection: 'column', marginTop: 20 }}
