@@ -9,6 +9,7 @@ const CELL_SIZE = 50;
 const CELL_COUNT_X = 24;
 const CELL_COUNT_Y = 18;
 const EDITOR = false;
+const SELL_FRACTION = 0.8;
 
 const SMALL_OFFSETS: Point[] = [
   [ -20.0, -20.0 ],
@@ -53,6 +54,7 @@ interface TurretData {
   cost: number;
   hp: number;
   range: number;
+  minRange: number;
   damage: number;
   cooldown: number;
   maxUpgrades: number;
@@ -61,12 +63,13 @@ interface TurretData {
 
 const TURRET_DATA: { [key in TurretType]: TurretData } = {
   basic: {
-    name: 'Basic Turret',
+    name: 'Gun Turret',
     description: 'Shoots a 1 damage bullet every second.',
     icon: '🔫',
     cost: 80,
     hp: 5,
     range: 3.0,
+    minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
     maxUpgrades: 3,
@@ -83,8 +86,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Rapid Fire',
-        description: 'Increases fire rate by 50%.',
-        cost: 150,
+        description: 'Doubles rate of fire.',
+        cost: 280,
       },
       {
         name: 'Piercing',
@@ -104,45 +107,96 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     ],
   },
   slow: {
-    name: 'Slow Turret',
-    description: 'Slows enemies down.',
+    name: 'Snow Turret',
+    description: 'Slows enemies down for 3 seconds, once every 5 seconds.',
     icon: '❄️',
-    cost: 8,
+    cost: 180,
     hp: 5,
-    range: 3.0,
-    damage: 1,
-    cooldown: 1.0,
-    maxUpgrades: 0,
+    range: 1.5,
+    minRange: 0.0,
+    damage: 0,
+    cooldown: 5.0,
+    maxUpgrades: 2,
     upgrades: [
-      
+      {
+        name: 'Blizzard',
+        description: 'Increases range by 1 tile.',
+        cost: 400,
+      },
+      {
+        name: 'Deep Freeze',
+        description: 'Increases slow duration to 6 seconds.',
+        cost: 450,
+      },
+      {
+        name: 'Rapid Fire',
+        description: 'Doubles rate of fire.',
+        cost: 500,
+      },
     ],
   },
   splash: {
-    name: 'Splash Turret',
-    description: 'Shoots a bullet that explodes.',
-    icon: '💥',
-    cost: 12,
+    name: 'Cannon',
+    description: 'Shoots a bomb that explodes, dealing 2 damage to up to 10 units.',
+    icon: '💣', // 💥
+    cost: 240,
     hp: 5,
-    range: 3.0,
-    damage: 1,
-    cooldown: 1.0,
-    maxUpgrades: 0,
+    range: 4.5,
+    minRange: 3.0,
+    damage: 2,
+    cooldown: 8.0,
+    maxUpgrades: 4,
     upgrades: [
-      
+      {
+        name: 'Distant Bombardment',
+        description: 'Increase min and max range by 2 tiles.',
+        cost: 350,
+      },
+      {
+        name: 'High Explosives',
+        description: 'Doubles damage from 2 to 4.',
+        cost: 640,
+      },
+      {
+        name: 'Very High Explosives',
+        description: 'Doubles damage again.',
+        cost: 2000,
+      },
+      {
+        name: 'Rapid Fire',
+        description: 'Doubles rate of fire.',
+        cost: 850,
+      },
+      {
+        name: 'Cluster Bomb',
+        description: 'Can damage up to 30 units.',
+        cost: 1000,
+      },
+      {
+        name: 'Large Area',
+        description: 'Increases explosion radius by 70%.',
+        cost: 900,
+      },
+      {
+        name: 'Missiles',
+        description: 'Increases projectile velocity to 3x.',
+        cost: 650,
+      },
     ],
   },
   magic: {
-    name: 'Magic Turret',
-    description: 'Shoots a bullet that can hit multiple enemies.',
-    icon: '✨',
-    cost: 20,
+    name: 'Zapper',
+    description: 'Shoots lighting that deals 1, 3, or 6 damage depending on charge time.',
+    icon: '⚡',
+    cost: 280,
     hp: 5,
     range: 3.0,
-    damage: 1,
-    cooldown: 1.0,
+    minRange: 0.0,
+    damage: 0,
+    cooldown: 5.0,
     maxUpgrades: 0,
     upgrades: [
-      
+
     ],
   },
   laser: {
@@ -152,25 +206,27 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 30,
     hp: 5,
     range: 3.0,
+    minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
     maxUpgrades: 0,
     upgrades: [
-      
+
     ],
   },
   wall: {
     name: 'Wall',
     description: 'Blocks enemies.',
     icon: '🧱',
-    cost: 5,
+    cost: 20,
     hp: 10,
     range: 0,
+    minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
     maxUpgrades: 0,
     upgrades: [
-      
+
     ],
   },
   repair: {
@@ -180,11 +236,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 12,
     hp: 5,
     range: 3.0,
+    minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
     maxUpgrades: 0,
     upgrades: [
-      
+
     ],
   },
   miner: {
@@ -194,11 +251,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 5,
     hp: 5,
     range: 0,
+    minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
     maxUpgrades: 0,
     upgrades: [
-      
+
     ],
   },
 };
@@ -208,12 +266,15 @@ class Turret {
   type: TurretType;
   cooldown: number;
   upgrades: string[];
+  investedGold: number = 0;
 
   constructor(type: TurretType) {
-    this.hp = TURRET_DATA[type].hp;
+    const data = TURRET_DATA[type];
+    this.hp = data.hp;
     this.type = type;
     this.cooldown = 0;
     this.upgrades = [];
+    this.investedGold = data.cost;
   }
 }
 
@@ -231,6 +292,7 @@ class Enemy {
   gold: number;
   color: string;
   size: number;
+  cold: number = 0.0;
 
   constructor(speed: number, hp: number, gold: number, color: string, size: number) {
     this.id = Math.random().toString() + Math.random().toString();
@@ -242,7 +304,10 @@ class Enemy {
   }
 
   update(app: App, dt: number) {
-    this.t += dt * this.speed * 0.01;
+    // Never slow down to less than 25% speed.
+    const thisFrameSpeed = this.speed / Math.min(3.0, 1.0 + this.cold);
+    this.t += dt * thisFrameSpeed * 0.01;
+    this.cold = Math.min(Math.max(0, this.cold - dt), 30.0);
     this.pos = interpolate(app.level.linearPoints, this.t);
     if (this.t >= 1) {
       app.hp -= this.hp;
@@ -253,22 +318,77 @@ class Enemy {
   }
 }
 
+class GroundEffect {
+  id: string;
+  pos: Point = [ 0, 0 ];
+  size: number = 0;
+  dsizedt: number = 0;
+  color: string = 'white';
+  opacity: number = 0.3;
+
+  constructor(pos: Point, size: number, dsizedt: number, color: string) {
+    this.id = Math.random().toString() + Math.random().toString();
+    this.pos = [pos[0], pos[1]];
+    this.size = size;
+    this.dsizedt = dsizedt;
+    this.color = color;
+  }
+
+  update(dt: number) {
+    this.size = Math.max(0, this.size + dt * this.dsizedt);
+  }
+
+  render(): React.ReactNode {
+    return (
+      <div
+        key={this.id}
+        style={{
+          position: 'absolute',
+          left: this.pos[0] - this.size,
+          top: this.pos[1] - this.size,
+          width: 2 * this.size,
+          height: 2 * this.size,
+          borderRadius: '100%',
+          backgroundColor: this.color,
+          opacity: this.opacity,
+          zIndex: 10,
+        }}
+      />
+    );
+  }
+}
+
+interface BombDesc {
+  radius: number;
+  maximumEnemies: number;
+  damage: number;
+  trail: boolean;
+}
+
 class Bullet {
   id: string;
   pos: Point = [ 0, 0 ];
   speed: number;
+  targetPos: Point;
   targetDelta: Point = [ 0, 0 ];
   targetEnemy: Enemy | null = null;
   size: number = 5.0;
   damage: number = 1;
   hp: number = 1;
   color: string = 'yellow';
+  bombDesc: BombDesc | null = null;
   alreadyHit: Enemy[] = [];
 
-  constructor(pos: Point, targetPos: Point, targetEnemy: Enemy | null, speed: number) {
+  constructor(
+    pos: Point,
+    targetPos: Point,
+    targetEnemy: Enemy | null,
+    speed: number,
+  ) {
     this.id = Math.random().toString() + Math.random().toString();
     this.pos = [pos[0], pos[1]];
     this.speed = speed;
+    this.targetPos = [targetPos[0], targetPos[1]];
     const dx = targetPos[0] - pos[0];
     const dy = targetPos[1] - pos[1];
     const d = dist(pos, targetPos) + 1e-6;
@@ -278,18 +398,46 @@ class Bullet {
 
   update(app: App, dt: number) {
     let substeps = Math.max(1, Math.round(this.speed / 250.0));
+    if (this.bombDesc?.trail && Math.random() < 0.4)
+      app.effects.push(new GroundEffect(this.pos, 10.0, -20, '#aaa'));
     for (let substep = 0; substep < substeps; substep++) {
       this.pos[0] += this.targetDelta[0] * dt / substeps;
       this.pos[1] += this.targetDelta[1] * dt / substeps;
-      // Try to find an enemy to hit.
-      for (const enemy of app.enemies) {
-        if (this.alreadyHit.includes(enemy))
-          continue;
-        if (dist(this.pos, enemy.pos) <= enemy.size + this.size) {
-          enemy.hp -= this.damage;
-          this.hp -= 1;
-          this.alreadyHit.push(enemy);
-          break;
+      // Try to find an enemy to hit, if we're not a bomb.
+      if (this.bombDesc === null) {
+        for (const enemy of app.enemies) {
+          if (this.alreadyHit.includes(enemy))
+            continue;
+          if (dist(this.pos, enemy.pos) <= enemy.size + this.size) {
+            enemy.hp -= this.damage;
+            this.hp -= 1;
+            this.alreadyHit.push(enemy);
+            break;
+          }
+        }
+      } else {
+        // If we are a bomb, check if we're close enough to explode.
+        if (dist(this.pos, this.targetPos) <= this.size) {
+          this.hp = 0;
+          let hitsRemaining = this.bombDesc.maximumEnemies;
+          for (const enemy of app.enemies) {
+            if (dist(this.pos, enemy.pos) <= enemy.size + this.bombDesc.radius) {
+              console.log('hit', this.bombDesc);
+              enemy.hp -= this.bombDesc.damage;
+              hitsRemaining -= 1;
+              if (hitsRemaining === 0)
+                break;
+            }
+          }
+          for (let i = 0; i < 12; i++) {
+            const r = this.bombDesc.radius;
+            let center: Point = [
+              this.pos[0] + (Math.random() - 0.5) * r,
+              this.pos[1] + (Math.random() - 0.5) * r,
+            ];
+            app.effects.push(new GroundEffect(center, r * 0.6, -r*1.5, 'red'));
+            app.effects.push(new GroundEffect(center, r * 0.6 / 2, -r*0.75, 'yellow'));
+          }
         }
       }
       if (this.hp === 0)
@@ -366,8 +514,9 @@ class App extends React.PureComponent<IAppProps> {
   path: Point[] = [];
   enemies: Enemy[] = [];
   bullets: Bullet[] = [];
+  effects: GroundEffect[] = [];
   level: Level;
-  gold: number = 200;
+  gold: number = 20000;
   wave: number = 1;
   hp: number = 100;
   fastMode: boolean = false;
@@ -494,7 +643,17 @@ class App extends React.PureComponent<IAppProps> {
       this.selectedCell.turret.upgrades.length <= TURRET_DATA[this.selectedCell.turret.type].maxUpgrades
     ) {
       this.selectedCell.turret.upgrades.push(upgrade.name);
+      this.selectedCell.turret.investedGold += upgrade.cost;
       this.gold -= upgrade.cost;
+    }
+  }
+
+  sellCell = (cell: CellContents | null) => {
+    if (cell === null)
+      return;
+    if (cell.turret !== null) {
+      this.gold += Math.round(cell.turret.investedGold * SELL_FRACTION);
+      cell.turret = null;
     }
   }
 
@@ -503,19 +662,55 @@ class App extends React.PureComponent<IAppProps> {
     let range = data.range;
     if (turret.upgrades.includes('Range'))
       range += 3;
+    if (turret.upgrades.includes('Blizzard'))
+      range += 1;
+    if (turret.upgrades.includes('Distant Bombardment'))
+      range += 2;
     return range;
+  }
+
+  computeTurretMinRange = (turret: Turret): number => {
+    const data = TURRET_DATA[turret.type];
+    let minRange = data.minRange;
+    if (turret.upgrades.includes('Distant Bombardment'))
+      minRange += 2;
+    return minRange;
   }
 
   computeTurretCooldown = (turret: Turret): number => {
     const data = TURRET_DATA[turret.type];
     let cooldown = data.cooldown;
     if (turret.upgrades.includes('Rapid Fire'))
-      cooldown *= 0.6666;
+      cooldown *= 0.5;
     return cooldown;
   }
 
   makeTurretBullets = (turret: Turret, pos: Point, furthestTarget: Enemy): Bullet[] => {
     const data = TURRET_DATA[turret.type];
+    if (turret.type === 'splash') {
+      let speed = 250.0;
+      if (turret.upgrades.includes('Missiles'))
+        speed *= 3.0;
+      const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed);
+      b.size = 10.0;
+      b.color = '#555';
+      b.bombDesc = {
+        radius: 1.5 * CELL_SIZE,
+        damage: data.damage,
+        maximumEnemies: 10,
+        trail: turret.upgrades.includes('Missiles'),
+      };
+      if (turret.upgrades.includes('Large Area'))
+        b.bombDesc.radius *= 1.7;
+      if (turret.upgrades.includes('Cluster Bomb'))
+        b.bombDesc.maximumEnemies *= 3;
+      if (turret.upgrades.includes('High Explosives'))
+        b.bombDesc.damage *= 2;
+      if (turret.upgrades.includes('Very High Explosives'))
+        b.bombDesc.damage *= 2;
+      return [b];
+    }
+
     let speed = 500.0;
     if (turret.upgrades.includes('Velocity'))
       speed *= 3.0;
@@ -580,6 +775,16 @@ class App extends React.PureComponent<IAppProps> {
         }
       }
 
+      // Update effects.
+      for (let i = 0; i < this.effects.length; i++) {
+        const effect = this.effects[i];
+        effect.update(dt);
+        if (effect.size <= 0) {
+          this.effects.splice(i, 1);
+          i--;
+        }
+      }
+
       // Update all turrets.
       for (let y = 0; y < this.level.grid.length; y++) {
         const row = this.level.grid[y];
@@ -589,14 +794,37 @@ class App extends React.PureComponent<IAppProps> {
             const turret = cell.turret;
             turret.cooldown = Math.max(0, turret.cooldown - dt);
             const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
+            const range = this.computeTurretRange(turret) * CELL_SIZE;
+            const minRange = this.computeTurretMinRange(turret) * CELL_SIZE;
+
             if (turret.cooldown <= 0) {
+              // Perform special behavior for each turret type.
+              if (turret.type === 'slow') {
+                let coldAmount = 3.0;
+                if (turret.upgrades.includes('Deep Freeze'))
+                  coldAmount += 3.0;
+
+                let doAttack = false;
+                for (const enemy of this.enemies) {
+                  const d = dist(pos, enemy.pos) - enemy.size - 10.0;
+                  if (minRange <= d && d <= range) {
+                    enemy.cold += coldAmount;
+                    doAttack = true;
+                  }
+                }
+                if (doAttack) {
+                  turret.cooldown = this.computeTurretCooldown(turret);
+                  this.effects.push(new GroundEffect(pos, range + 40, -150, '#aaf'));
+                }
+                continue;
+              }
+
               // Find all valid targets.
               let furthestT = -1.0;
               let furthestTarget = null;
-              const range = this.computeTurretRange(turret) * CELL_SIZE;
               for (const enemy of this.enemies) {
                 const d = dist(pos, enemy.pos) - enemy.size - 10.0;
-                if (d <= range) {
+                if (minRange <= d && d <= range) {
                   if (enemy.t > furthestT) {
                     furthestT = enemy.t;
                     furthestTarget = enemy;
@@ -757,12 +985,17 @@ class App extends React.PureComponent<IAppProps> {
           // Push a range indicator, if hovered.
           if (cell === this.hoveredCell) {
             let offerRange = selectedTurretTypeData === null ? 0 : selectedTurretTypeData.range;
+            let offerMinRange = selectedTurretTypeData === null ? 0 : selectedTurretTypeData.minRange;
             if (selectedTurretTypeData !== null && this.gold < selectedTurretTypeData.cost) {
               offerRange = 0;
+              offerMinRange = 0;
             }
             const range = cell.turret !== null ? this.computeTurretRange(cell.turret) : offerRange;
+            const minRange = cell.turret !== null ? this.computeTurretMinRange(cell.turret) : offerMinRange;
             if (range > 0) {
-              cells.push(<div
+              const innerPercent = minRange / range * 100;
+              // Draw an annulus.
+              cells.push(<svg
                 key={`${x},${y}-range`}
                 style={{
                   position: 'absolute',
@@ -770,13 +1003,46 @@ class App extends React.PureComponent<IAppProps> {
                   top: y * CELL_SIZE - range * CELL_SIZE,
                   width: CELL_SIZE * (range * 2 + 1),
                   height: CELL_SIZE * (range * 2 + 1),
-                  backgroundColor: 'red',
-                  borderRadius: '100%',
-                  opacity: 0.1,
-                  pointerEvents: 'none',
                   zIndex: 10,
+                  opacity: 0.2,
+                  pointerEvents: 'none',
                 }}
-              />);
+                viewBox={`0 0 300 300`}
+              >
+                <defs>
+                  <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset={`${innerPercent}%`} style={{stopColor: 'rgb(255,0,0)', stopOpacity: 0}} />
+                    <stop offset={`${innerPercent + 0.1}%`} style={{stopColor: 'rgb(255,0,0)', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: 'rgb(255,0,0)', stopOpacity: 1}} />
+                  </radialGradient>
+                </defs>
+                <circle cx="150" cy="150" r="150" fill="url(#gradient)" />
+              </svg>);
+
+                /*                 <defs>
+                  <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style={{stopColor: 'rgba(255, 255, 255, 0.0)', stopOpacity: 0}} />
+                    <stop offset="100%" style={{stopColor: 'rgba(255, 255, 255, 0.0)', stopOpacity: 1}} />
+                  </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="50" fill="url(#grad1)" /> */
+
+
+              // cells.push(<div
+              //   key={`${x},${y}-range`}
+              //   style={{
+              //     position: 'absolute',
+              //     left: x * CELL_SIZE - range * CELL_SIZE,
+              //     top: y * CELL_SIZE - range * CELL_SIZE,
+              //     width: CELL_SIZE * (range * 2 + 1),
+              //     height: CELL_SIZE * (range * 2 + 1),
+              //     backgroundColor: 'red',
+              //     borderRadius: '100%',
+              //     opacity: 0.1,
+              //     pointerEvents: 'none',
+              //     zIndex: 10,
+              //   }}
+              // />);
             }
           }
         }
@@ -816,7 +1082,9 @@ class App extends React.PureComponent<IAppProps> {
         }}
       />);
     }
-
+    for (const effect of this.effects) {
+      movingThings.push(effect.render());
+    }
 
     function colorText(color: string, text: string | number) {
       return <span style={{ color, textShadow: '0 0 2px #000' }}>{text}</span>;
@@ -943,6 +1211,7 @@ class App extends React.PureComponent<IAppProps> {
           fontSize: 24,
           background: '#3a3a3a',
           color: '#fff',
+          zIndex: 50,
         }}>
           <div style={{
             display: 'flex',
@@ -992,7 +1261,7 @@ class App extends React.PureComponent<IAppProps> {
           </div>
 
           {shownTurretTypeData !== null && <div>
-            <h3>{shownTurretTypeData.name}</h3>
+            <div style={{ fontSize: '110%', fontWeight: 'bold', marginTop: 10, marginBottom: 10 }}>{shownTurretTypeData.name}</div>
             {shownTurretTypeData.description}
             <div
               style={{ display: 'flex', flexDirection: 'column', marginTop: 20 }}
@@ -1035,6 +1304,18 @@ class App extends React.PureComponent<IAppProps> {
                   </div>
                 </div>;
               })}
+
+              {this.selectedCell?.turret && <div style={{
+                marginTop: 10,
+                border: '1px solid #111',
+                padding: 10,
+                userSelect: 'none',
+                background: '#333',
+              }} className='hoverButton' onClick={() => {
+                this.sellCell(this.selectedCell);
+              }}>
+                Sell for {colorText('yellow', Math.round(this.selectedCell.turret.investedGold * SELL_FRACTION))}
+              </div>}
             </div>
           </div>}
 
