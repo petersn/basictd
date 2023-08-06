@@ -334,7 +334,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 2,
+    maxUpgrades: 3,
     upgrades: [
       {
         name: 'Repair Capacity',
@@ -350,6 +350,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Repair Speed',
         description: 'Doubles repair speed.',
         cost: 250,
+      },
+      {
+        name: 'Super Repair Speed',
+        description: 'Doubles repair speed again.',
+        cost: 750,
       },
     ],
   },
@@ -1188,6 +1193,8 @@ class App extends React.PureComponent<IAppProps> {
               }
               let repairRate = 0.45;
               if (turret.upgrades.includes('Repair Speed'))
+                repairRate *= 2.0;
+              if (turret.upgrades.includes('Super Repair Speed'))
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
               if (turret.upgrades.includes('Repair Capacity'))
