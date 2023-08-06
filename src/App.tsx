@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.17';
+const VERSION = 'v0.18';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -11,6 +11,9 @@ const CELL_COUNT_X = 24;
 const CELL_COUNT_Y = 18;
 const EDITOR = false;
 const SELL_FRACTION = 0.8;
+
+const FIELD_WIDTH = CELL_SIZE * CELL_COUNT_X;
+const FIELD_HEIGHT = CELL_SIZE * CELL_COUNT_Y;
 
 const SMALL_OFFSETS: Point[] = [
   [ -15.0, -15.0 ],
@@ -382,6 +385,7 @@ class Enemy {
   pos: Point = [ 0, 0 ];
   speed: number;
   hp: number;
+  maxHp: number;
   gold: number;
   color: string;
   size: number;
@@ -396,6 +400,7 @@ class Enemy {
     this.id = Math.random().toString() + Math.random().toString();
     this.speed = speed;
     this.hp = hp;
+    this.maxHp = hp;
     this.gold = gold;
     this.color = color;
     this.size = size;
@@ -822,7 +827,7 @@ class App extends React.PureComponent<IAppProps> {
         speed *= 2.0;
       }
       if (hordeWave) {
-        biasAdder /= 1.5;
+        biasAdder /= 1.25;
       }
       const enemyTypes: [string, number, number, number, number, number][] = [
         ['red',      1,    1,     1, 1.0,  14],
@@ -848,7 +853,6 @@ class App extends React.PureComponent<IAppProps> {
         enemy.maxShootCooldown = 3.0;
         enemy.shootDamage = 1;
         if (enemy.color === 'yellow') {
-          enemy.shootCooldown = 2.5;
           enemy.shootDamage += 1;
         }
         if (enemy.color === 'black') {
@@ -1214,6 +1218,10 @@ class App extends React.PureComponent<IAppProps> {
                     continue;
                   if (enemy.scratch === scratch)
                     continue;
+                  // Skip off-screen enemies.
+                  if (enemy.pos[0] < 0 || enemy.pos[0] >= FIELD_WIDTH ||
+                      enemy.pos[1] < 0 || enemy.pos[1] >= FIELD_HEIGHT)
+                    continue;
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
                     if (enemy.t > furthestT) {
@@ -1282,7 +1290,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.4;
+                    let fireOutput = 0.5;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
@@ -1592,6 +1600,39 @@ class App extends React.PureComponent<IAppProps> {
           zIndex: 5,
         }}
       />);
+      // Draw a health bar.
+      if (enemy.hp < enemy.maxHp) {
+        movingThings.push(<div
+          key={`${enemy.id}-hp`}
+          style={{
+            position: 'absolute',
+            left: enemy.pos[0] - enemy.size,
+            top: enemy.pos[1] + enemy.size + 2,
+            width: 2*enemy.size,
+            height: 2,
+            border: '1px solid black',
+            background: '#800',
+            borderRadius: 1,
+            pointerEvents: 'none',
+            zIndex: 6,
+          }}
+        />);
+        movingThings.push(<div
+          key={`${enemy.id}-hp2`}
+          style={{
+            position: 'absolute',
+            left: enemy.pos[0] - enemy.size,
+            top: enemy.pos[1] + enemy.size + 2,
+            width: 2*enemy.size * enemy.hp / enemy.maxHp,
+            height: 2,
+            border: '1px solid black',
+            background: '#f00',
+            borderRadius: 1,
+            pointerEvents: 'none',
+            zIndex: 7,
+          }}
+        />);
+      }
     }
     for (const bullet of this.bullets) {
       movingThings.push(<div
