@@ -238,7 +238,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Flamethrower',
     description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
-    cost: 280,
+    cost: 175,
     hp: 8,
     range: 2.5,
     minRange: 1.5,
@@ -249,12 +249,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
-        cost: 300,
+        cost: 225,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 450,
+        cost: 275,
       },
     ],
   },
