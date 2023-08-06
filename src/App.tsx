@@ -3,14 +3,14 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.24';
+const VERSION = 'v0.25';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
 const CELL_COUNT_X = 24;
 const CELL_COUNT_Y = 18;
 const EDITOR = false;
-const SELL_FRACTION = 0.8;
+const SELL_FRACTION = 0.9;
 
 const FIELD_WIDTH = CELL_SIZE * CELL_COUNT_X;
 const FIELD_HEIGHT = CELL_SIZE * CELL_COUNT_Y;
