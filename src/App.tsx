@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.5';
+const VERSION = 'v0.9';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -78,12 +78,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Range',
         description: 'Increases range by 3 tiles.',
-        cost: 100,
+        cost: 65,
       },
       {
         name: 'Velocity',
         description: 'Increases bullet velocity to 3x.',
-        cost: 120,
+        cost: 85,
       },
       {
         name: 'Rapid Fire',
@@ -122,17 +122,17 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Deep Freeze',
         description: 'Increases slow duration to 6 seconds.',
-        cost: 225,
+        cost: 185,
       },
       {
         name: 'Blizzard',
         description: 'Increases range by 1 tile.',
-        cost: 300,
+        cost: 250,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 350,
+        cost: 275,
       },
     ],
   },
@@ -140,7 +140,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Cannon',
     description: 'Shoots an explosive every 8 seconds, dealing 3 damage to up to 10 units.',
     icon: '💣', // 💥
-    cost: 220,
+    cost: 200,
     hp: 5,
     range: 4.5,
     minRange: 3.0,
@@ -151,37 +151,37 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Distant Bombardment',
         description: 'Increase min and max range by 2 tiles.',
-        cost: 200,
+        cost: 75,
       },
       {
         name: 'Missiles',
         description: 'Increases projectile velocity to 3x.',
-        cost: 250,
+        cost: 120,
       },
       {
         name: 'Large Area',
         description: 'Increases explosion radius by 70%.',
-        cost: 450,
+        cost: 275,
       },
       {
         name: 'High Explosives',
         description: 'Doubles damage.',
-        cost: 400,
+        cost: 300,
       },
       {
         name: 'Very High Explosives',
         description: 'Doubles damage again.',
-        cost: 750,
+        cost: 450,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 900,
+        cost: 500,
       },
       {
         name: 'Cluster Bomb',
         description: 'Can damage up to 30 units.',
-        cost: 1200,
+        cost: 850,
       },
     ],
   },
@@ -218,6 +218,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 150,
       },
       {
+        name: 'Targeting Computer',
+        description: 'Never fires at enemies with <4 HP.',
+        cost: 185,
+      },
+      {
         name: 'Chain Lightning',
         description: 'Lightning bounces to another enemy.',
         cost: 200,
@@ -226,11 +231,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Lightning Storm',
         description: 'Lightning bounces to yet another enemy.',
         cost: 300,
-      },
-      {
-        name: 'Targeting Computer',
-        description: 'Never fires at enemies with <4 HP.',
-        cost: 250,
       },
     ],
   },
@@ -249,7 +249,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
-        cost: 350,
+        cost: 300,
       },
       {
         name: 'Rapid Fire',
@@ -406,7 +406,7 @@ class Enemy {
     const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
     if (this.burning > 0.2)
-      thisFrameSpeed *= 2.0;
+      thisFrameSpeed *= 1.65;
     if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
       const frost = new GroundEffect([
         this.pos[0] + (Math.random() - 0.5) * 10,
@@ -794,9 +794,9 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 20;
+    this.gold += 25;
     this.gameState = 'wave';
-    this.waveTimerMax = 10 + 1.5 * this.wave;
+    this.waveTimerMax = 15 + 2.0 * Math.pow(this.wave, 0.6);
     this.waveTimer = 0;
     this.enemySchedule = [];
     let enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
@@ -816,23 +816,23 @@ class App extends React.PureComponent<IAppProps> {
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
-      let biasAdder = Math.sqrt(this.wave);
+      let biasAdder = Math.pow(this.wave, 0.65);
       if (fastWave) {
         biasAdder *= 0.5;
         speed *= 2.0;
       }
       if (hordeWave) {
-        biasAdder /= 2.0;
+        biasAdder /= 1.5;
       }
       const enemyTypes: [string, number, number, number, number, number][] = [
         ['red',      1,    1,     1, 1.0,  14],
         ['blue',     2,    2,   1.8, 1.0,  16],
         ['green',    4,    5,   2.2, 1.0,  18],
         ['yellow',  12,   20,     4, 1.0,  20],
-        ['black',   40,  100,    18, 0.75, 22],
-        ['pink',   150, 1000,   150, 0.5,  24],
+        ['black',   60,  100,    18, 0.75, 22],
+        ['pink',   400, 1000,   150, 0.5,  24],
       ];
-      let index = Math.floor(Math.sqrt(Math.max(enemySizeBias, 0) / 5.0));
+      let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.65));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
         index = 0;
       }
@@ -844,10 +844,10 @@ class App extends React.PureComponent<IAppProps> {
       const enemy = new Enemy(speed * speedMult, hp, gold, color, size);
       if (shootyWave || (this.wave > 10 && this.wave % 2 === 1 && enemyIndex % 2 === 0)) {
         biasAdder *= 0.8;
-        enemy.maxShootCooldown = 4.0;
+        enemy.maxShootCooldown = 3.0;
         enemy.shootDamage = 1;
         if (enemy.color === 'yellow') {
-          enemy.shootCooldown = 3.0;
+          enemy.shootCooldown = 2.5;
           enemy.shootDamage += 1;
         }
         if (enemy.color === 'black') {
@@ -864,8 +864,8 @@ class App extends React.PureComponent<IAppProps> {
 
       enemyIndex++;
       counter++;
-      if (counter > 10.0 + Math.sqrt(this.wave)) {
-        t += 2.5;
+      if (counter > 10.0 + Math.pow(this.wave, 0.75)) {
+        t += 2.0;
         counter = 0;
       }
 
@@ -1150,7 +1150,7 @@ class App extends React.PureComponent<IAppProps> {
                   this.effects.push(new GroundEffect(lerpedPos, 10, -10, '#5f5'));
                 }
               }
-              let repairRate = 1.5;
+              let repairRate = 0.5;
               if (turret.upgrades.includes('Repair Speed'))
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
