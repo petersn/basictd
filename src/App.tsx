@@ -13,10 +13,10 @@ const EDITOR = false;
 const SELL_FRACTION = 0.8;
 
 const SMALL_OFFSETS: Point[] = [
-  [ -20.0, -20.0 ],
-  [ -20.0,  20.0 ],
-  [  20.0, -20.0 ],
-  [  20.0,  20.0 ],
+  [ -15.0, -15.0 ],
+  [ -15.0,  15.0 ],
+  [  15.0, -15.0 ],
+  [  15.0,  15.0 ],
 ];
 
 // const PATH: Point[] = [
