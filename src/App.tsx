@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.13';
+const VERSION = 'v0.14';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -112,7 +112,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds. Cancels out being on fire.',
     icon: '❄️',
     cost: 150,
-    hp: 5,
+    hp: 8,
     range: 1.5,
     minRange: 0.0,
     damage: 0,
@@ -239,7 +239,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
     cost: 280,
-    hp: 5,
+    hp: 8,
     range: 2.5,
     minRange: 1.5,
     damage: 0,
@@ -649,7 +649,7 @@ class EnemyBullet {
     if (cell.turret !== null && !cell.turret.dead) {
       let d = this.damage;
       if (cell.turret.type === 'wall')
-        d *= 0.85;
+        d *= 0.7;
       cell.turret.hp -= d;
       this.damage = 0;
     }
@@ -1108,7 +1108,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.13 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.14 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
