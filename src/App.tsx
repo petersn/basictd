@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.16';
+const VERSION = 'v0.17';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -239,12 +239,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
     cost: 175,
-    hp: 8,
+    hp: 5,
     range: 2.5,
     minRange: 1.5,
     damage: 0,
     cooldown: 6.0,
-    maxUpgrades: 3,
+    maxUpgrades: 2,
     upgrades: [
       {
         name: 'Napalm',
@@ -425,7 +425,7 @@ class Enemy {
       this.gold = 0;
     }
     if (this.burning > 0.2) {
-      const burnRate = this.burning / 4.5;
+      const burnRate = this.burning / 5.0;
       this.burning -= burnRate * dt;
       this.hp = accountDamage(this.hp, 'fire', burnRate * dt);
       for (const col of [ '#f00', '#ff0' ])
@@ -794,12 +794,12 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 50;
+    this.gold += 55;
     this.gameState = 'wave';
-    this.waveTimerMax = 20 + 3.0 * Math.pow(this.wave, 0.6);
+    this.waveTimerMax = 18 + 2.0 * Math.sqrt(this.wave);
     this.waveTimer = 0;
     this.enemySchedule = [];
-    let enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
+    let enemyDensity = 1.0 + Math.pow(this.wave / 2.0, 0.65);
     //const enemyCount = this.waveTimerMax * enemyDensity;
 
     const fastWave = this.wave > 10 && (this.wave % 5 === 3);
@@ -816,7 +816,7 @@ class App extends React.PureComponent<IAppProps> {
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
-      let biasAdder = Math.pow(this.wave, 0.65);
+      let biasAdder = Math.pow(this.wave, 0.9) / 1.5;
       if (fastWave) {
         biasAdder *= 0.5;
         speed *= 2.0;
@@ -829,9 +829,9 @@ class App extends React.PureComponent<IAppProps> {
         ['blue',     2,    2,   1.8, 1.0,  16],
         ['green',    4,    5,   2.2, 1.0,  18],
         ['yellow',  12,   20,     6, 1.0,  20],
-        ['black',   60,  100,    25, 0.75, 22],
-        ['pink',   350,  650,   150, 0.5,  24],
-        ['white', 1000, 3000,   500, 0.3,  26],
+        ['black',   50,  100,    25, 0.75, 22],
+        ['pink',   125,  850,   150, 0.5,  24],
+        ['white',  400, 5000,   500, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -1282,7 +1282,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.6;
+                    let fireOutput = 0.4;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
