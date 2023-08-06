@@ -405,8 +405,8 @@ class Enemy {
     // Never slow down to less than 25% speed.
     const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
-    if (this.burning > 0.2)
-      thisFrameSpeed *= 1.65;
+    if (this.burning > 1.0)
+      thisFrameSpeed *= 1.45;
     if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
       const frost = new GroundEffect([
         this.pos[0] + (Math.random() - 0.5) * 10,
@@ -425,7 +425,7 @@ class Enemy {
       this.gold = 0;
     }
     if (this.burning > 0.2) {
-      const burnRate = this.burning / 6.0;
+      const burnRate = this.burning / 4.5;
       this.burning -= burnRate * dt;
       this.hp = accountDamage(this.hp, 'fire', burnRate * dt);
       for (const col of [ '#f00', '#ff0' ])
@@ -1282,7 +1282,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.4;
+                    let fireOutput = 0.6;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
