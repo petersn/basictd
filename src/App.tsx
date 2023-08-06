@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.12';
+const VERSION = 'v0.13';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -649,7 +649,7 @@ class EnemyBullet {
     if (cell.turret !== null && !cell.turret.dead) {
       let d = this.damage;
       if (cell.turret.type === 'wall')
-        d *= 0.9;
+        d *= 0.85;
       cell.turret.hp -= d;
       this.damage = 0;
     }
@@ -794,7 +794,7 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 45;
+    this.gold += 50;
     this.gameState = 'wave';
     this.waveTimerMax = 15 + 2.0 * Math.pow(this.wave, 0.6);
     this.waveTimer = 0;
@@ -1108,7 +1108,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.12 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.13 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
