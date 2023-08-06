@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
+const VERSION = 'v0.2';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -404,8 +405,8 @@ class Enemy {
     // Never slow down to less than 25% speed.
     const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
-    if (this.burning > 0.5)
-      thisFrameSpeed *= 1.6;
+    if (this.burning > 0.2)
+      thisFrameSpeed *= 2.0;
     if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
       const frost = new GroundEffect([
         this.pos[0] + (Math.random() - 0.5) * 10,
@@ -423,8 +424,8 @@ class Enemy {
       // Enemies that cross the finish don't give gold.
       this.gold = 0;
     }
-    if (this.burning > 0.5) {
-      const burnRate = this.burning / 4.0;
+    if (this.burning > 0.2) {
+      const burnRate = this.burning / 6.0;
       this.burning -= burnRate * dt;
       this.hp = accountDamage(this.hp, 'fire', burnRate * dt);
       for (const col of [ '#f00', '#ff0' ])
@@ -765,6 +766,7 @@ class App extends React.PureComponent<IAppProps> {
   }
 
   componentDidMount() {
+    document.getElementById('version')!.textContent = VERSION;
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
     this.rafLoopHandle = requestAnimationFrame(this.rafLoop);
@@ -797,10 +799,10 @@ class App extends React.PureComponent<IAppProps> {
     //const enemyCount = this.waveTimerMax * enemyDensity;
 
     const fastWave = this.wave > 10 && (this.wave % 5 === 3);
-    const shootyWave = this.wave > 20 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
+    const shootyWave = this.wave > 5 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
     if (hordeWave) {
-      enemyDensity *= 2.0;
+      enemyDensity *= 3.0;
     }
 
     let t = 0;
@@ -816,16 +818,17 @@ class App extends React.PureComponent<IAppProps> {
         speed *= 2.0;
       }
       if (hordeWave) {
-        biasAdder *= 0.5;
+        biasAdder /= 2.0;
       }
       const enemyTypes: [string, number, number, number, number][] = [
-        ['red',     1,  1, 1.0, 14],
-        ['blue',    2,  2, 1.0, 16],
-        ['green',   5,  3, 1.0, 18],
-        ['yellow', 20,  5, 1.0, 20],
-        ['black', 100, 20, 0.5, 25],
+        ['red',      1,   1, 1.0,  14],
+        ['blue',     2,   2, 1.0,  16],
+        ['green',    5,   3, 1.0,  18],
+        ['yellow',  20,   5, 1.0,  20],
+        ['black',  100,  20, 0.75, 22],
+        ['pink',  1000, 150, 0.5,  24],
       ];
-      let index = Math.floor(Math.sqrt(enemySizeBias / 5.0));
+      let index = Math.floor(Math.sqrt(Math.max(enemySizeBias, 0) / 5.0));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
         index = 0;
       }
@@ -837,7 +840,7 @@ class App extends React.PureComponent<IAppProps> {
       const enemy = new Enemy(speed * speedMult, hp, gold, color, size);
       if (shootyWave || (this.wave > 10 && this.wave % 2 === 1 && enemyIndex % 2 === 0)) {
         biasAdder *= 0.8;
-        enemy.maxShootCooldown = 5.0;
+        enemy.maxShootCooldown = 3.0;
         enemy.shootDamage = 1;
       }
       this.enemySchedule.push([t, enemy]);
@@ -1027,7 +1030,7 @@ class App extends React.PureComponent<IAppProps> {
     document.getElementById('fps')!.textContent = fps.toFixed(1);
     let dt = Math.min(elapsed, 0.1);
 
-    let reps = this.fastMode ? 20 : 1;//5 : 1;
+    let reps = this.fastMode ? 5 : 1;
     for (let rep = 0; rep < reps; rep++) {
       // Update path.
       if (this.clickedKnot !== null) {
@@ -1089,7 +1092,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.2 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.1 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
@@ -1262,7 +1265,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.8;
+                    let fireOutput = 0.4;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
