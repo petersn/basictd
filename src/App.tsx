@@ -72,7 +72,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 3,
+    maxUpgrades: 4,
     upgrades: [
       {
         name: 'Range',
@@ -108,7 +108,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   slow: {
     name: 'Snow Machine',
-    description: 'Slows enemies down for 3 seconds, once every 5 seconds.',
+    description: 'Slows enemies down for 3 seconds, once every 5 seconds. Cancels out being on fire.',
     icon: '❄️',
     cost: 180,
     hp: 5,
@@ -119,19 +119,19 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 2,
     upgrades: [
       {
+        name: 'Deep Freeze',
+        description: 'Increases slow duration to 6 seconds.',
+        cost: 275,
+      },
+      {
         name: 'Blizzard',
         description: 'Increases range by 1 tile.',
         cost: 400,
       },
       {
-        name: 'Deep Freeze',
-        description: 'Increases slow duration to 6 seconds.',
-        cost: 450,
-      },
-      {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 500,
+        cost: 400,
       },
     ],
   },
@@ -188,59 +188,80 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Zapper',
     description: 'Charges up every 2 seconds, and deals n² damage when released. Max charge: 3.',
     icon: '⚡',
-    cost: 175,
+    cost: 115,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
     damage: 0,
     cooldown: 0.0, // Cooldown is controlled by recharging.
-    maxUpgrades: 3,
+    maxUpgrades: 4,
     upgrades: [
       {
         name: 'Capacitors',
         description: 'Increases max charge by 3.',
-        cost: 150,
+        cost: 75,
       },
       {
         name: 'Batteries',
         description: 'Increases max charge by another 3.',
-        cost: 250,
+        cost: 95,
+      },
+      {
+        name: 'Range',
+        description: 'Increases range by 3 tiles.',
+        cost: 125,
       },
       {
         name: 'Superconductors',
         description: 'Doubles recharge rate.',
-        cost: 350,
-      },
-      {
-        name: 'Targeting Computer',
-        description: 'Never fires at enemies with <4 HP.',
-        cost: 400,
+        cost: 150,
       },
       {
         name: 'Chain Lightning',
         description: 'Lightning bounces to another enemy.',
-        cost: 450,
+        cost: 200,
       },
       {
         name: 'Lightning Storm',
         description: 'Lightning bounces to yet another enemy.',
-        cost: 850,
+        cost: 300,
+      },
+      {
+        name: 'Targeting Computer',
+        description: 'Never fires at enemies with <4 HP.',
+        cost: 250,
       },
     ],
   },
   fire: {
     name: 'Flamethrower',
-    description: 'Shoots a laser that can hit multiple enemies.',
+    description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
-    cost: 30,
+    cost: 280,
     hp: 5,
-    range: 3.0,
-    minRange: 0.0,
-    damage: 1,
-    cooldown: 1.0,
-    maxUpgrades: 0,
+    range: 2.5,
+    minRange: 1.5,
+    damage: 0,
+    cooldown: 6.0,
+    maxUpgrades: 3,
     upgrades: [
-
+      // Make an upgrade that increases damage, and causes damaged enemies to speed up.
+      // Them speeding up will be an interesting trade-off.
+      // {
+      //   name: 'Floopo',
+      //   description: 'Increases range by 1 tiles.',
+      //   cost: 400,
+      // },
+      {
+        name: 'Napalm',
+        description: 'Doubles fire damage (but over a longer time).',
+        cost: 350,
+      },
+      {
+        name: 'Rapid Fire',
+        description: 'Doubles rate of fire.',
+        cost: 450,
+      },
     ],
   },
   laser: {
@@ -354,6 +375,7 @@ class Enemy {
   color: string;
   size: number;
   cold: number = 0.0;
+  burning: number = 0.0;
   scratch: number = 0;
 
   constructor(speed: number, hp: number, gold: number, color: string, size: number) {
@@ -367,15 +389,36 @@ class Enemy {
 
   update(app: App, dt: number) {
     // Never slow down to less than 25% speed.
-    const thisFrameSpeed = this.speed / Math.min(3.0, 1.0 + this.cold);
+    let thisFrameSpeed = this.speed / Math.min(3.0, 1.0 + this.cold);
+    if (this.burning > 0.5)
+      thisFrameSpeed *= 1.6;
+    if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
+      const frost = new GroundEffect([
+        this.pos[0] + (Math.random() - 0.5) * 10,
+        this.pos[1] + (Math.random() - 0.5) * 10,
+      ], 15.0, -10, '#aaf');
+      frost.dropRate = 20.0 + 10 * Math.random();
+      app.effects.push(frost);
+    }
     this.t += dt * thisFrameSpeed * 0.01;
     this.cold = Math.min(Math.max(0, this.cold - dt), 30.0);
     this.pos = interpolate(app.level.linearPoints, this.t);
     if (this.t >= 1) {
-      app.hp -= this.hp;
+      app.hp -= Math.round(this.hp);
       this.hp = 0;
       // Enemies that cross the finish don't give gold.
       this.gold = 0;
+    }
+    if (this.burning > 0.5) {
+      const burnRate = this.burning / 4.0;
+      this.burning -= burnRate * dt;
+      this.hp -= burnRate * dt;
+      for (const col of [ '#f00', '#ff0' ])
+        if (Math.random() < 0.2)
+          app.effects.push(new GroundEffect([
+            this.pos[0] + (Math.random() - 0.5) * 10,
+            this.pos[1] + (Math.random() - 0.5) * 10,
+          ], 15.0, -20, col));
     }
   }
 }
@@ -385,6 +428,7 @@ class GroundEffect {
   pos: Point = [ 0, 0 ];
   size: number = 0;
   dsizedt: number = 0;
+  dropRate: number = 0;
   color: string = 'white';
   opacity: number = 0.3;
 
@@ -398,6 +442,7 @@ class GroundEffect {
 
   update(dt: number) {
     this.size = Math.max(0, this.size + dt * this.dsizedt);
+    this.pos[1] += dt * this.dropRate;
   }
 
   render(): React.ReactNode {
@@ -441,6 +486,8 @@ class Bullet {
   bombDesc: BombDesc | null = null;
   alreadyHit: Enemy[] = [];
   laser: number = 0;
+  fire: number = 0;
+  fireDistance: number = 0;
 
   constructor(
     pos: Point,
@@ -460,9 +507,18 @@ class Bullet {
   }
 
   update(app: App, dt: number) {
-    let substeps = Math.max(1, Math.round(this.speed / 250.0));
+    // FIXME: I can adjust this 300 to trade off speed.
+    let substeps = Math.max(1, Math.round(this.speed / 300.0));
     if (this.bombDesc?.trail && Math.random() < 0.4)
       app.effects.push(new GroundEffect(this.pos, 10.0, -20, '#aaa'));
+    if (this.fire) {
+      for (const col of [ '#f00', '#ff0' ])
+        if (Math.random() < 0.1)
+          app.effects.push(new GroundEffect(this.pos, 12.0, -25, col));
+      this.fireDistance -= dt * this.speed;
+      if (this.fireDistance <= 0)
+        this.hp = 0;
+    }
     if (this.laser) {
       substeps = this.laser / this.size;
       dt = this.laser;
@@ -480,6 +536,9 @@ class Bullet {
             if (this.alreadyHit.includes(enemy))
               continue;
             enemy.hp -= this.damage;
+            enemy.burning += this.fire;
+            if (this.fire > 0)
+              enemy.cold = 0;
             this.hp -= 1;
             this.alreadyHit.push(enemy);
             break;
@@ -589,8 +648,8 @@ class App extends React.PureComponent<IAppProps> {
   effects: GroundEffect[] = [];
   level: Level;
   gold: number = 20000;
-  wave: number = 1;
-  hp: number = 100;
+  wave: number = 20;
+  hp: number = 10000000;
   fastMode: boolean = false;
   waveTimer: number = 0;
   waveTimerMax: number = 1;
@@ -735,6 +794,8 @@ class App extends React.PureComponent<IAppProps> {
     let range = data.range;
     if (turret.upgrades.includes('Range'))
       range += 3;
+    if (turret.upgrades.includes('Floopo'))
+      range += 1;
     if (turret.upgrades.includes('Blizzard'))
       range += 1;
     if (turret.upgrades.includes('Distant Bombardment'))
@@ -903,6 +964,7 @@ class App extends React.PureComponent<IAppProps> {
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
                     enemy.cold += coldAmount;
+                    enemy.burning = 0;
                     doAttack = true;
                   }
                 }
@@ -927,14 +989,12 @@ class App extends React.PureComponent<IAppProps> {
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
                     if (enemy.t > furthestT) {
-                      if (chainCount != 2)
                       furthestT = enemy.t;
                       furthestTarget = enemy;
                     }
                   }
                 }
                 if (furthestTarget !== null) {
-                  if (chainCount != 2)
                   turret.cooldown = self.computeTurretCooldown(turret);
                   // If we're a zapper, zap the target.
                   if (turret.type === 'zapper') {
@@ -980,7 +1040,6 @@ class App extends React.PureComponent<IAppProps> {
                     turret.laserDamageAccumulator += laserDamageRate * dt;
                     const b = new Bullet(pos, targetPoint, furthestTarget, 1.0);
                     b.size = 10.0;
-                    b.damage = 5.0;
                     b.color = '#0f0';
                     b.laser = range;
                     b.damage = 0;
@@ -993,6 +1052,26 @@ class App extends React.PureComponent<IAppProps> {
                       b.size += 2.0 * b.damage;
                     }
                     self.bullets.push(b);
+                  } else if (turret.type === 'fire') {
+                    const fireballCount = 50.0; //Math.round(range / 2.0);
+                    let fireOutput = 1.5;
+                    if (turret.upgrades.includes('Napalm'))
+                      fireOutput *= 2.0;
+                    for (let i = 0; i < fireballCount; i++) {
+                      const heading = 2 * Math.PI * i / fireballCount;
+                      const targetPoint: Point = [
+                        pos[0] + Math.cos(heading) * range,
+                        pos[1] + Math.sin(heading) * range,
+                      ];
+                      const b = new Bullet(pos, targetPoint, furthestTarget, 100.0 + 10 * Math.random());
+                      b.size = 10.0;
+                      b.damage = 0.0;
+                      b.color = '#f00';
+                      b.fire = fireOutput;
+                      b.fireDistance = range + 10;
+                      b.hp = 3; // Allow a little bit of penetration.
+                      self.bullets.push(b);
+                    }
                   } else {
                     self.bullets.push(...self.makeTurretBullets(turret, pos, furthestTarget));
                   }
