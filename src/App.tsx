@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.22';
+const VERSION = 'v0.23';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -315,9 +315,13 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 0,
+    maxUpgrades: 1,
     upgrades: [
-
+      {
+        name: 'Reinforced Concrete',
+        description: 'Halves all damage received.',
+        cost: 300,
+      },
     ],
   },
   repair: {
@@ -407,8 +411,8 @@ class Enemy {
   }
 
   update(app: App, dt: number) {
-    // Never slow down to less than 25% speed.
-    const coldFactor = 1.0 / Math.min(4.0, 1.0 + this.cold)
+    // Never slow down to less than one third speed.
+    const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
     if (this.burning > 1.0)
       thisFrameSpeed *= 1.45;
@@ -655,6 +659,8 @@ class EnemyBullet {
       let d = this.damage;
       if (cell.turret.type === 'wall')
         d *= 0.7;
+      if (cell.turret.upgrades.includes('Reinforced Concrete'))
+        d *= 0.5;
       cell.turret.hp -= d;
       this.damage = 0;
     }
@@ -818,14 +824,14 @@ class App extends React.PureComponent<IAppProps> {
     let enemySizeBias = 0;
     let counter = 0;
     let enemyIndex = 0;
-    let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 5));
-    let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 5));
+    let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 3));
+    let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 3));
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
       let biasAdder = Math.pow(this.wave, 0.9) / 1.5;
       if (fastWave) {
-        biasAdder *= 0.5;
+        biasAdder /= 1.25;
         speed *= 2.0;
       }
       if (hordeWave) {
@@ -851,6 +857,12 @@ class App extends React.PureComponent<IAppProps> {
       }
       if (!fastWave && this.wave > 15 && this.wave % 3 === 0 && enemyIndex % 13 === 0) {
         index++;
+      }
+      if (this.wave > 30 && !shootyWave && this.wave % 2 === 0 && enemyIndex % 23 === 0) {
+        index = 5;
+      }
+      if (this.wave > 30 && shootyWave && this.wave % 2 === 0 && enemyIndex % 41 === 0) {
+        index = 5;
       }
       if (index >= 5) {
         if (pinkLimit > 0)
@@ -1214,7 +1226,7 @@ class App extends React.PureComponent<IAppProps> {
                 for (const enemy of this.enemies) {
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
-                    enemy.cold += coldAmount;
+                    enemy.cold = Math.min(60.0, enemy.cold + coldAmount);
                     enemy.burning = 0;
                     doAttack = true;
                   }
