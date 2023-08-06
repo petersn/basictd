@@ -66,7 +66,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Gun Turret',
     description: 'Shoots a 1 damage bullet every second.',
     icon: '🔫',
-    cost: 80,
+    cost: 100,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
@@ -110,7 +110,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Snow Machine',
     description: 'Slows enemies down for 3 seconds, once every 5 seconds. Cancels out being on fire.',
     icon: '❄️',
-    cost: 180,
+    cost: 150,
     hp: 5,
     range: 1.5,
     minRange: 0.0,
@@ -121,29 +121,29 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Deep Freeze',
         description: 'Increases slow duration to 6 seconds.',
-        cost: 275,
+        cost: 225,
       },
       {
         name: 'Blizzard',
         description: 'Increases range by 1 tile.',
-        cost: 400,
+        cost: 300,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 400,
+        cost: 350,
       },
     ],
   },
   splash: {
     name: 'Cannon',
-    description: 'Shoots an explosive every 8 seconds, dealing 2 damage to up to 10 units.',
+    description: 'Shoots an explosive every 8 seconds, dealing 3 damage to up to 10 units.',
     icon: '💣', // 💥
-    cost: 240,
+    cost: 220,
     hp: 5,
     range: 4.5,
     minRange: 3.0,
-    damage: 2,
+    damage: 3,
     cooldown: 8.0,
     maxUpgrades: 4,
     upgrades: [
@@ -342,6 +342,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
 
 class Turret {
   hp: number;
+  maxHp: number;
+  dead: boolean = false;
   type: TurretType;
   cooldown: number;
   upgrades: string[];
@@ -353,6 +355,7 @@ class Turret {
   constructor(type: TurretType) {
     const data = TURRET_DATA[type];
     this.hp = data.hp;
+    this.maxHp = data.hp;
     this.type = type;
     this.cooldown = 0;
     this.upgrades = [];
@@ -404,7 +407,7 @@ class Enemy {
     this.cold = Math.min(Math.max(0, this.cold - dt), 30.0);
     this.pos = interpolate(app.level.linearPoints, this.t);
     if (this.t >= 1) {
-      app.hp -= Math.round(this.hp);
+      app.hp -= Math.max(0, Math.round(this.hp));
       this.hp = 0;
       // Enemies that cross the finish don't give gold.
       this.gold = 0;
@@ -412,7 +415,7 @@ class Enemy {
     if (this.burning > 0.5) {
       const burnRate = this.burning / 4.0;
       this.burning -= burnRate * dt;
-      this.hp -= burnRate * dt;
+      this.hp = accountDamage(this.hp, 'fire', burnRate * dt);
       for (const col of [ '#f00', '#ff0' ])
         if (Math.random() < 0.2)
           app.effects.push(new GroundEffect([
@@ -420,7 +423,19 @@ class Enemy {
             this.pos[1] + (Math.random() - 0.5) * 10,
           ], 15.0, -20, col));
     }
+    if (Math.random() < 0.05) {
+      app.enemyBullets.push(new EnemyBullet(this.pos, 300.0, 1.0));
+    }
   }
+}
+
+const damageAttribution: { [key: string]: number } = {};
+for (const type of TURRET_TYPES)
+  damageAttribution[type] = 0;
+
+function accountDamage(hp: number, type: string, amount: number) {
+  damageAttribution[type] += Math.max(0, Math.min(hp, amount));
+  return hp - amount;
 }
 
 class GroundEffect {
@@ -488,16 +503,19 @@ class Bullet {
   laser: number = 0;
   fire: number = 0;
   fireDistance: number = 0;
+  counterName: TurretType;
 
   constructor(
     pos: Point,
     targetPos: Point,
     targetEnemy: Enemy | null,
     speed: number,
+    counterName: TurretType,
   ) {
     this.id = Math.random().toString() + Math.random().toString();
     this.pos = [pos[0], pos[1]];
     this.speed = speed;
+    this.counterName = counterName;
     this.targetPos = [targetPos[0], targetPos[1]];
     const dx = targetPos[0] - pos[0];
     const dy = targetPos[1] - pos[1];
@@ -535,7 +553,7 @@ class Bullet {
           if (dist(this.pos, enemy.pos) <= enemy.size + this.size) {
             if (this.alreadyHit.includes(enemy))
               continue;
-            enemy.hp -= this.damage;
+            enemy.hp = accountDamage(enemy.hp, this.counterName, this.damage);
             enemy.burning += this.fire;
             if (this.fire > 0)
               enemy.cold = 0;
@@ -552,7 +570,7 @@ class Bullet {
           for (const enemy of app.enemies) {
             if (dist(this.pos, enemy.pos) <= enemy.size + this.bombDesc.radius) {
               console.log('hit', this.bombDesc);
-              enemy.hp -= this.bombDesc.damage;
+              enemy.hp = accountDamage(enemy.hp, this.counterName, this.bombDesc.damage);
               hitsRemaining--;
               if (hitsRemaining === 0)
                 break;
@@ -578,6 +596,56 @@ class Bullet {
     }
     if (this.laser)
       this.hp = 0;
+  }
+}
+
+class EnemyBullet {
+  id: string;
+  pos: Point;
+  size: number = 5.0;
+  targetDelta: Point;
+  damage: number;
+
+  constructor(pos: Point, speed: number, damage: number) {
+    this.id = Math.random().toString() + Math.random().toString();
+    this.pos = [pos[0], pos[1]];
+    const heading = Math.random() * Math.PI * 2;
+    this.targetDelta = [ speed * Math.cos(heading), speed * Math.sin(heading) ];
+    this.damage = damage;
+  }
+
+  update(app: App, dt: number) {
+    this.pos[0] += this.targetDelta[0] * dt;
+    this.pos[1] += this.targetDelta[1] * dt;
+    const cellX = Math.floor(this.pos[0] / CELL_SIZE);
+    const cellY = Math.floor(this.pos[1] / CELL_SIZE);
+    if (cellX < 0 || cellX >= CELL_COUNT_X || cellY < 0 || cellY >= CELL_COUNT_Y) {
+      this.damage = 0;
+      return;
+    }
+    const cell = app.level.grid[cellY][cellX];
+    if (cell.turret !== null && !cell.turret.dead) {
+      cell.turret.hp -= this.damage;
+      this.damage = 0;
+    }
+  }
+
+  render(): React.ReactNode {
+    return (
+      <div
+        key={this.id}
+        style={{
+          position: 'absolute',
+          left: this.pos[0] - this.size,
+          top: this.pos[1] - this.size,
+          width: 2 * this.size,
+          height: 2 * this.size,
+          borderRadius: '100%',
+          backgroundColor: '#000',
+          zIndex: 10,
+        }}
+      />
+    );
   }
 }
 
@@ -645,11 +713,12 @@ class App extends React.PureComponent<IAppProps> {
   path: Point[] = [];
   enemies: Enemy[] = [];
   bullets: Bullet[] = [];
+  enemyBullets: EnemyBullet[] = [];
   effects: GroundEffect[] = [];
   level: Level;
-  gold: number = 20000;
-  wave: number = 20;
-  hp: number = 10000000;
+  gold: number = 200;
+  wave: number = 1;
+  hp: number = 100;
   fastMode: boolean = false;
   waveTimer: number = 0;
   waveTimerMax: number = 1;
@@ -825,7 +894,7 @@ class App extends React.PureComponent<IAppProps> {
       let speed = 250.0;
       if (turret.upgrades.includes('Missiles'))
         speed *= 3.0;
-      const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed);
+      const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed, turret.type);
       b.size = 10.0;
       b.color = '#555';
       b.bombDesc = {
@@ -849,11 +918,11 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Velocity'))
       speed *= 3.0;
     const bullets = [
-      new Bullet(pos, furthestTarget.pos, furthestTarget, speed),
+      new Bullet(pos, furthestTarget.pos, furthestTarget, speed, turret.type),
     ];
     if (turret.upgrades.includes('Trishot')) {
       for (const turn of [-1, +1]) {
-        const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed);
+        const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed, turret.type);
         b.targetDelta = rotate(b.targetDelta, turn * Math.PI / 8);
         bullets.push(b);
       }
@@ -932,6 +1001,32 @@ class App extends React.PureComponent<IAppProps> {
         for (let x = 0; x < row.length; x++) {
           const cell = row[x];
           if (cell.turret !== null) {
+            // Check for deadness.
+            if (cell.turret.hp <= 0) {
+              cell.turret.dead = true;
+              cell.turret.zapCharge = 0;
+            }
+            const HEAL_RATE = 0.4;
+            cell.turret.hp = Math.min(cell.turret.maxHp, cell.turret.hp + HEAL_RATE * dt);
+            if (cell.turret.dead) {
+              if (cell.turret.hp >= cell.turret.maxHp) {
+                cell.turret.dead = false;
+              }
+              continue;
+            }
+
+            if (cell.turret.type === 'repair') {
+              // Find the most damaged turret in range.
+              let leastHp = 100000;
+              let leastHpTurret = null;
+              for (let dx = -3; dx <= 3; dx++) {
+                for (let dy = -3; dy <= 3; dy++) {
+                  let testX = 
+                }
+              }
+              continue;
+            }
+
             const turret = cell.turret;
             turret.cooldown = Math.max(0, turret.cooldown - dt);
             const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
@@ -1010,7 +1105,7 @@ class App extends React.PureComponent<IAppProps> {
                       ];
                       self.effects.push(new GroundEffect(lerpPos, 15 * Math.sqrt(zapAmount), -50, '#ff0'));
                     }
-                    furthestTarget.hp -= zapAmount * zapAmount;
+                    furthestTarget.hp = accountDamage(furthestTarget.hp, 'zapper', zapAmount * zapAmount);
                     if (chainCount > 0) {
                       furthestTarget.scratch = scratch;
                       doAttackFrom(self, furthestTarget.pos, chainCount - 1, scratch);
@@ -1038,7 +1133,7 @@ class App extends React.PureComponent<IAppProps> {
                       pos[1] + Math.sin(turret.heading) * range,
                     ];
                     turret.laserDamageAccumulator += laserDamageRate * dt;
-                    const b = new Bullet(pos, targetPoint, furthestTarget, 1.0);
+                    const b = new Bullet(pos, targetPoint, furthestTarget, 1.0, turret.type);
                     b.size = 10.0;
                     b.color = '#0f0';
                     b.laser = range;
@@ -1054,7 +1149,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 1.5;
+                    let fireOutput = 0.8;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
@@ -1063,7 +1158,7 @@ class App extends React.PureComponent<IAppProps> {
                         pos[0] + Math.cos(heading) * range,
                         pos[1] + Math.sin(heading) * range,
                       ];
-                      const b = new Bullet(pos, targetPoint, furthestTarget, 100.0 + 10 * Math.random());
+                      const b = new Bullet(pos, targetPoint, furthestTarget, 100.0 + 10 * Math.random(), turret.type);
                       b.size = 10.0;
                       b.damage = 0.0;
                       b.color = '#f00';
@@ -1097,6 +1192,15 @@ class App extends React.PureComponent<IAppProps> {
         bullet.update(this, dt);
         if (bullet.hp <= 0) {
           this.bullets.splice(i, 1);
+          i--;
+        }
+      }
+      // Update all enemy bullets.
+      for (let i = 0; i < this.enemyBullets.length; i++) {
+        const bullet = this.enemyBullets[i];
+        bullet.update(this, dt);
+        if (bullet.damage <= 0) {
+          this.enemyBullets.splice(i, 1);
           i--;
         }
       }
@@ -1184,6 +1288,7 @@ class App extends React.PureComponent<IAppProps> {
           let upgradeCount = 0;
           let zapCharge = 0;
           let preview = null;
+          let turretBackgroundColor = '#444';
           let previewOpacity = 1.0;
           if (cell.turret === null && cell == this.hoveredCell && selectedTurretTypeData !== null && selectedTurretTypeData.cost <= this.gold) {
             preview = selectedTurretTypeData.icon;
@@ -1196,6 +1301,12 @@ class App extends React.PureComponent<IAppProps> {
             }
             upgradeCount = cell.turret.upgrades.length;
             zapCharge = cell.turret.zapCharge;
+            const damageLerp = cell.turret.hp / cell.turret.maxHp;
+            const r = 68 + 187 * (1 - damageLerp);
+            turretBackgroundColor = `rgba(${r}, 68, 68, 1.0)`;
+            if (cell.turret.dead) {
+              previewOpacity = 0.3;
+            }
           }
 
           cells.push(<div
@@ -1221,7 +1332,7 @@ class App extends React.PureComponent<IAppProps> {
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 30,
-              backgroundColor: '#444',
+              backgroundColor: turretBackgroundColor,
               userSelect: 'none',
               position: 'relative',
             }}>
@@ -1342,6 +1453,10 @@ class App extends React.PureComponent<IAppProps> {
         }}
       />);
     }
+    for (const enemyBullet of this.enemyBullets) {
+      movingThings.push(enemyBullet.render());
+    }
+
     for (const effect of this.effects) {
       movingThings.push(effect.render());
     }
@@ -1576,6 +1691,10 @@ class App extends React.PureComponent<IAppProps> {
                 this.sellCell(this.selectedCell);
               }}>
                 Sell for {colorText('yellow', Math.round(this.selectedCell.turret.investedGold * SELL_FRACTION))}
+              </div>}
+
+              {this.selectedTurretType !== null && <div style={{ position: 'absolute', bottom: 5 }}>
+                Total damage dealt: {Math.floor(damageAttribution[this.selectedTurretType])}
               </div>}
             </div>
           </div>}
