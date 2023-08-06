@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.19';
+const VERSION = 'v0.20';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -154,37 +154,37 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Distant Bombardment',
         description: 'Increase min and max range by 2 tiles.',
-        cost: 75,
+        cost: 45,
       },
       {
         name: 'Missiles',
         description: 'Increases projectile velocity to 3x.',
-        cost: 120,
+        cost: 95,
       },
       {
         name: 'Large Area',
         description: 'Increases explosion radius by 70%.',
-        cost: 275,
+        cost: 150,
       },
       {
         name: 'High Explosives',
         description: 'Doubles damage.',
-        cost: 300,
+        cost: 220,
       },
       {
         name: 'Very High Explosives',
         description: 'Doubles damage again.',
-        cost: 450,
+        cost: 400,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 500,
+        cost: 325,
       },
       {
         name: 'Cluster Bomb',
         description: 'Can damage up to 30 units.',
-        cost: 850,
+        cost: 550,
       },
     ],
   },
@@ -252,12 +252,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
-        cost: 225,
+        cost: 215,
       },
       {
         name: 'Rapid Fire',
         description: 'Doubles rate of fire.',
-        cost: 275,
+        cost: 250,
       },
     ],
   },
@@ -324,7 +324,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Repair Station',
     description: 'Repairs nearby turrets.',
     icon: '🔧',
-    cost: 350,
+    cost: 175,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
@@ -335,17 +335,17 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Repair Capacity',
         description: 'Triples the storage of repair charges.',
-        cost: 150,
+        cost: 55,
       },
       {
         name: 'Repair Range',
         description: 'Increases range by 2 tiles.',
-        cost: 220,
+        cost: 125,
       },
       {
         name: 'Repair Speed',
         description: 'Doubles repair speed.',
-        cost: 395,
+        cost: 250,
       },
     ],
   },
@@ -1155,7 +1155,7 @@ class App extends React.PureComponent<IAppProps> {
                   this.effects.push(new GroundEffect(lerpedPos, 10, -10, '#5f5'));
                 }
               }
-              let repairRate = 0.7;
+              let repairRate = 0.45;
               if (turret.upgrades.includes('Repair Speed'))
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
