@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.26';
+const VERSION = 'v0.27';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -834,7 +834,7 @@ class App extends React.PureComponent<IAppProps> {
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
-      let biasAdder = Math.pow(this.wave, 0.9) / 1.5;
+      let biasAdder = Math.max(1.5, Math.pow(this.wave, 1.3) / 3.0);
       if (fastWave) {
         biasAdder /= 1.25;
         speed *= 2.0;
@@ -846,10 +846,10 @@ class App extends React.PureComponent<IAppProps> {
         ['red',      1,    1,     1, 1.0,  14],
         ['blue',     2,    2,   2.0, 1.0,  16],
         ['green',    4,    5,   2.5, 1.0,  18],
-        ['yellow',  12,   20,     7, 1.0,  20],
-        ['black',   50,  100,    35, 0.75, 22],
-        ['pink',   125,  850,   200, 0.5,  24],
-        ['white',  400, 5000,  1000, 0.3,  26],
+        ['yellow',  12,   20,     5, 1.0,  20],
+        ['black',   50,  100,    20, 0.75, 22],
+        ['pink',   100,  850,    80, 0.5,  24],
+        ['white',  400, 5000,   200, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -889,15 +889,20 @@ class App extends React.PureComponent<IAppProps> {
         enemy.maxShootCooldown = 3.0;
         enemy.shootDamage = 1;
         if (enemy.color === 'yellow') {
+          enemy.shootCooldown = 2.2;
           enemy.shootDamage += 1;
         }
         if (enemy.color === 'black') {
-          enemy.shootCooldown = 2.0;
+          enemy.shootCooldown = 1.5;
           enemy.shootDamage += 2;
         }
         if (enemy.color === 'pink') {
-          enemy.shootCooldown = 2.0;
+          enemy.shootCooldown = 0.5;
           enemy.shootDamage += 4;
+        }
+        if (enemy.color === 'white') {
+          enemy.shootCooldown = 0.25;
+          enemy.shootDamage += 7;
         }
       }
       this.enemySchedule.push([t, enemy]);
