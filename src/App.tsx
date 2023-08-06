@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.4';
+const VERSION = 'v0.5';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -794,7 +794,7 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 15;
+    this.gold += 20;
     this.gameState = 'wave';
     this.waveTimerMax = 10 + 1.5 * this.wave;
     this.waveTimer = 0;
@@ -1013,7 +1013,7 @@ class App extends React.PureComponent<IAppProps> {
       return [b];
     }
 
-    let speed = 500.0;
+    let speed = 650.0;
     if (turret.upgrades.includes('Velocity'))
       speed *= 3.0;
     const bullets = [
