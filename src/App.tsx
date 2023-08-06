@@ -245,13 +245,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cooldown: 6.0,
     maxUpgrades: 3,
     upgrades: [
-      // Make an upgrade that increases damage, and causes damaged enemies to speed up.
-      // Them speeding up will be an interesting trade-off.
-      // {
-      //   name: 'Floopo',
-      //   description: 'Increases range by 1 tiles.',
-      //   cost: 400,
-      // },
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
@@ -324,18 +317,32 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     ],
   },
   repair: {
-    name: 'Repair Turret',
+    name: 'Repair Station',
     description: 'Repairs nearby turrets.',
     icon: '🔧',
-    cost: 12,
+    cost: 350,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 0,
+    maxUpgrades: 2,
     upgrades: [
-
+      {
+        name: 'Repair Capacity',
+        description: 'Triples the storage of repair charges.',
+        cost: 450,
+      },
+      {
+        name: 'Repair Range',
+        description: 'Increases range by 2 tiles.',
+        cost: 650,
+      },
+      {
+        name: 'Repair Speed',
+        description: 'Doubles repair speed.',
+        cost: 750,
+      },
     ],
   },
 };
@@ -474,6 +481,7 @@ class GroundEffect {
           backgroundColor: this.color,
           opacity: this.opacity,
           zIndex: 10,
+          pointerEvents: 'none',
         }}
       />
     );
@@ -643,6 +651,7 @@ class EnemyBullet {
           borderRadius: '100%',
           backgroundColor: '#000',
           zIndex: 10,
+          pointerEvents: 'none',
         }}
       />
     );
@@ -716,7 +725,7 @@ class App extends React.PureComponent<IAppProps> {
   enemyBullets: EnemyBullet[] = [];
   effects: GroundEffect[] = [];
   level: Level;
-  gold: number = 200;
+  gold: number = 20000;
   wave: number = 1;
   hp: number = 100;
   fastMode: boolean = false;
@@ -863,8 +872,8 @@ class App extends React.PureComponent<IAppProps> {
     let range = data.range;
     if (turret.upgrades.includes('Range'))
       range += 3;
-    if (turret.upgrades.includes('Floopo'))
-      range += 1;
+    if (turret.upgrades.includes('Repair Range'))
+      range += 2;
     if (turret.upgrades.includes('Blizzard'))
       range += 1;
     if (turret.upgrades.includes('Distant Bombardment'))
@@ -1001,35 +1010,68 @@ class App extends React.PureComponent<IAppProps> {
         for (let x = 0; x < row.length; x++) {
           const cell = row[x];
           if (cell.turret !== null) {
+            const turret = cell.turret;
+            const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
+
             // Check for deadness.
-            if (cell.turret.hp <= 0) {
-              cell.turret.dead = true;
-              cell.turret.zapCharge = 0;
+            if (turret.hp <= 0) {
+              turret.dead = true;
+              turret.zapCharge = 0;
             }
-            const HEAL_RATE = 0.4;
-            cell.turret.hp = Math.min(cell.turret.maxHp, cell.turret.hp + HEAL_RATE * dt);
-            if (cell.turret.dead) {
-              if (cell.turret.hp >= cell.turret.maxHp) {
-                cell.turret.dead = false;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.4 : 0.0;
+            turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
+            if (turret.dead) {
+              if (turret.hp >= turret.maxHp) {
+                turret.dead = false;
               }
               continue;
             }
 
-            if (cell.turret.type === 'repair') {
+            if (turret.type === 'repair') {
               // Find the most damaged turret in range.
               let leastHp = 100000;
               let leastHpTurret = null;
-              for (let dx = -3; dx <= 3; dx++) {
-                for (let dy = -3; dy <= 3; dy++) {
-                  let testX = 
+              let leastHpPos = [0, 0];
+              const range = this.computeTurretRange(turret);
+              for (let dx = -range; dx <= range; dx++) {
+                for (let dy = -range; dy <= range; dy++) {
+                  let xx = x + dx;
+                  let yy = y + dy;
+                  if (xx < 0 || xx >= row.length || yy < 0 || yy >= this.level.grid.length)
+                    continue;
+                  const testCell = this.level.grid[yy][xx];
+                  if (testCell.turret === null)
+                    continue;
+                  if (testCell.turret.hp < leastHp && testCell.turret.hp < testCell.turret.maxHp) {
+                    leastHp = testCell.turret.hp;
+                    leastHpTurret = testCell.turret;
+                    leastHpPos = [(xx + 0.5) * CELL_SIZE, (yy + 0.5) * CELL_SIZE];
+                  }
                 }
               }
+              if (turret.zapCharge >= 1 && leastHpTurret !== null) {
+                turret.zapCharge -= 1;
+                leastHpTurret.hp = Math.min(leastHpTurret.maxHp, leastHpTurret.hp + 1);
+                for (let lerp = 0; lerp <= 1; lerp += 0.05) {
+                  const lerpedPos: Point = [
+                    lerp * pos[0] + (1 - lerp) * leastHpPos[0] + (Math.random() - 0.5) * 5,
+                    lerp * pos[1] + (1 - lerp) * leastHpPos[1] + (Math.random() - 0.5) * 5,
+                  ]
+                  this.effects.push(new GroundEffect(lerpedPos, 10, -10, '#5f5'));
+                }
+              }
+              let repairRate = 1.5;
+              if (turret.upgrades.includes('Repair Speed'))
+                repairRate *= 2.0;
+              let maxRepairCharges = 5;
+              if (turret.upgrades.includes('Repair Capacity'))
+                maxRepairCharges *= 3;
+              if (this.enemies.length > 0)
+                turret.zapCharge = Math.min(maxRepairCharges, turret.zapCharge + repairRate * dt);
               continue;
             }
 
-            const turret = cell.turret;
             turret.cooldown = Math.max(0, turret.cooldown - dt);
-            const pos: Point = [(x + 0.5) * CELL_SIZE, (y + 0.5) * CELL_SIZE];
             const range = this.computeTurretRange(turret) * CELL_SIZE;
             const minRange = this.computeTurretMinRange(turret) * CELL_SIZE;
 
@@ -1363,32 +1405,54 @@ class App extends React.PureComponent<IAppProps> {
             }
             const range = cell.turret !== null ? this.computeTurretRange(cell.turret) : offerRange;
             const minRange = cell.turret !== null ? this.computeTurretMinRange(cell.turret) : offerMinRange;
+            const isSquare = cell.turret?.type === 'repair' || this.selectedTurretType === 'repair';
+            let stopColor = 'rgb(255,0,0)';
+            if (cell.turret?.type === 'slow' || this.selectedTurretType === 'slow') {
+              stopColor = 'rgb(0,0,255)';
+            }
             if (range > 0) {
-              const innerPercent = minRange / range * 100;
-              // Draw an annulus.
-              cells.push(<svg
-                key={`${x},${y}-range`}
-                style={{
-                  position: 'absolute',
-                  left: x * CELL_SIZE - range * CELL_SIZE,
-                  top: y * CELL_SIZE - range * CELL_SIZE,
-                  width: CELL_SIZE * (range * 2 + 1),
-                  height: CELL_SIZE * (range * 2 + 1),
-                  zIndex: 10,
-                  opacity: 0.2,
-                  pointerEvents: 'none',
-                }}
-                viewBox={`0 0 300 300`}
-              >
-                <defs>
-                  <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset={`${innerPercent}%`} style={{stopColor: 'rgb(255,0,0)', stopOpacity: 0}} />
-                    <stop offset={`${innerPercent + 0.1}%`} style={{stopColor: 'rgb(255,0,0)', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: 'rgb(255,0,0)', stopOpacity: 1}} />
-                  </radialGradient>
-                </defs>
-                <circle cx="150" cy="150" r="150" fill="url(#gradient)" />
-              </svg>);
+              if (isSquare) {
+                cells.push(<div
+                  key={`${x},${y}-range`}
+                  style={{
+                    position: 'absolute',
+                    left: x * CELL_SIZE - range * CELL_SIZE,
+                    top: y * CELL_SIZE - range * CELL_SIZE,
+                    width: CELL_SIZE * (range * 2 + 1),
+                    height: CELL_SIZE * (range * 2 + 1),
+                    zIndex: 10,
+                    opacity: 0.2,
+                    backgroundColor: '#00f',
+                    pointerEvents: 'none',
+                  }}
+                />);
+              } else {
+                const innerPercent = minRange / range * 100;
+                // Draw an annulus.
+                cells.push(<svg
+                  key={`${x},${y}-range`}
+                  style={{
+                    position: 'absolute',
+                    left: x * CELL_SIZE - range * CELL_SIZE,
+                    top: y * CELL_SIZE - range * CELL_SIZE,
+                    width: CELL_SIZE * (range * 2 + 1),
+                    height: CELL_SIZE * (range * 2 + 1),
+                    zIndex: 10,
+                    opacity: 0.2,
+                    pointerEvents: 'none',
+                  }}
+                  viewBox={`0 0 300 300`}
+                >
+                  <defs>
+                    <radialGradient id="gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                      <stop offset={`${innerPercent}%`} style={{stopColor, stopOpacity: 0}} />
+                      <stop offset={`${innerPercent + 0.1}%`} style={{stopColor, stopOpacity: 1}} />
+                      <stop offset="100%" style={{stopColor, stopOpacity: 1}} />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="150" cy="150" r="150" fill="url(#gradient)" />
+                </svg>);
+              }
 
                 /*                 <defs>
                   <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -1433,6 +1497,7 @@ class App extends React.PureComponent<IAppProps> {
           border: '1px solid black',
           background: enemy.color,
           borderRadius: enemy.size,
+          pointerEvents: 'none',
           zIndex: 5,
         }}
       />);
@@ -1449,6 +1514,7 @@ class App extends React.PureComponent<IAppProps> {
           border: '1px solid black',
           background: bullet.color,
           borderRadius: bullet.size,
+          pointerEvents: 'none',
           zIndex: 8,
         }}
       />);
