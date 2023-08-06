@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.2';
+const VERSION = 'v0.3';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -647,7 +647,10 @@ class EnemyBullet {
     }
     const cell = app.level.grid[cellY][cellX];
     if (cell.turret !== null && !cell.turret.dead) {
-      cell.turret.hp -= this.damage;
+      let d = this.damage;
+      if (cell.turret.type === 'wall')
+        d *= 0.667;
+      cell.turret.hp -= d;
       this.damage = 0;
     }
   }
@@ -791,6 +794,7 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
+    this.gold += 25;
     this.gameState = 'wave';
     this.waveTimerMax = 10 + 1.5 * this.wave;
     this.waveTimer = 0;
@@ -799,7 +803,7 @@ class App extends React.PureComponent<IAppProps> {
     //const enemyCount = this.waveTimerMax * enemyDensity;
 
     const fastWave = this.wave > 10 && (this.wave % 5 === 3);
-    const shootyWave = this.wave > 5 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
+    const shootyWave = this.wave > 15 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
     if (hordeWave) {
       enemyDensity *= 3.0;
@@ -821,12 +825,12 @@ class App extends React.PureComponent<IAppProps> {
         biasAdder /= 2.0;
       }
       const enemyTypes: [string, number, number, number, number][] = [
-        ['red',      1,   1, 1.0,  14],
-        ['blue',     2,   2, 1.0,  16],
-        ['green',    5,   3, 1.0,  18],
-        ['yellow',  20,   5, 1.0,  20],
-        ['black',  100,  20, 0.75, 22],
-        ['pink',  1000, 150, 0.5,  24],
+        ['red',      1,     1, 1.0,  14],
+        ['blue',     2,   1.8, 1.0,  16],
+        ['green',    5,   2.2, 1.0,  18],
+        ['yellow',  20,     4, 1.0,  20],
+        ['black',  100,    18, 0.75, 22],
+        ['pink',  1000,   150, 0.5,  24],
       ];
       let index = Math.floor(Math.sqrt(Math.max(enemySizeBias, 0) / 5.0));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -840,7 +844,7 @@ class App extends React.PureComponent<IAppProps> {
       const enemy = new Enemy(speed * speedMult, hp, gold, color, size);
       if (shootyWave || (this.wave > 10 && this.wave % 2 === 1 && enemyIndex % 2 === 0)) {
         biasAdder *= 0.8;
-        enemy.maxShootCooldown = 3.0;
+        enemy.maxShootCooldown = 4.0;
         enemy.shootDamage = 1;
       }
       this.enemySchedule.push([t, enemy]);
@@ -1092,7 +1096,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.1 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.15 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
@@ -1625,7 +1629,7 @@ class App extends React.PureComponent<IAppProps> {
           marginLeft: 20,
           width: 350,
         }}>
-          <div>Gold:&nbsp; {colorText('yellow', this.gold)}</div>
+          <div>Gold:&nbsp; {colorText('yellow', Math.floor(this.gold))}</div>
           <div>Lives: {colorText('red', this.hp)}</div>
         </div>
 
