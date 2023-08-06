@@ -108,7 +108,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   slow: {
     name: 'Snow Machine',
-    description: 'Slows enemies down for 3 seconds, once every 5 seconds. Cancels out being on fire.',
+    description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds. Cancels out being on fire.',
     icon: '❄️',
     cost: 150,
     hp: 5,
@@ -387,6 +387,9 @@ class Enemy {
   cold: number = 0.0;
   burning: number = 0.0;
   scratch: number = 0;
+  shootCooldown: number = 0;
+  maxShootCooldown: number = 0;
+  shootDamage: number = 0;
 
   constructor(speed: number, hp: number, gold: number, color: string, size: number) {
     this.id = Math.random().toString() + Math.random().toString();
@@ -399,7 +402,8 @@ class Enemy {
 
   update(app: App, dt: number) {
     // Never slow down to less than 25% speed.
-    let thisFrameSpeed = this.speed / Math.min(3.0, 1.0 + this.cold);
+    const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
+    let thisFrameSpeed = this.speed * coldFactor;
     if (this.burning > 0.5)
       thisFrameSpeed *= 1.6;
     if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
@@ -430,9 +434,18 @@ class Enemy {
             this.pos[1] + (Math.random() - 0.5) * 10,
           ], 15.0, -20, col));
     }
-    if (Math.random() < 0.05) {
-      app.enemyBullets.push(new EnemyBullet(this.pos, 300.0, 1.0));
+    if (this.shootDamage > 0) {
+      this.shootCooldown -= dt * coldFactor;
+      if (this.shootCooldown <= 0) {
+        this.shootCooldown = this.maxShootCooldown;
+        const b = new EnemyBullet(this.pos, 300.0, this.shootDamage);
+        b.size *= Math.sqrt(this.shootDamage);
+        app.enemyBullets.push(b);
+      }
     }
+    // if (Math.random() < 0.05) {
+    //   app.enemyBullets.push(new EnemyBullet(this.pos, 300.0, 1.0));
+    // }
   }
 }
 
@@ -725,7 +738,7 @@ class App extends React.PureComponent<IAppProps> {
   enemyBullets: EnemyBullet[] = [];
   effects: GroundEffect[] = [];
   level: Level;
-  gold: number = 20000;
+  gold: number = 200;
   wave: number = 1;
   hp: number = 100;
   fastMode: boolean = false;
@@ -780,35 +793,93 @@ class App extends React.PureComponent<IAppProps> {
     this.waveTimerMax = 10 + 1.5 * this.wave;
     this.waveTimer = 0;
     this.enemySchedule = [];
-    const enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
-    const enemyCount = this.waveTimerMax * enemyDensity;
+    let enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
+    //const enemyCount = this.waveTimerMax * enemyDensity;
+
+    const fastWave = this.wave > 10 && (this.wave % 5 === 3);
+    const shootyWave = this.wave > 20 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
+    const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
+    if (hordeWave) {
+      enemyDensity *= 2.0;
+    }
+
     let t = 0;
+    let enemySizeBias = 0;
+    let counter = 0;
+    let enemyIndex = 0;
     while (t < this.waveTimerMax) {
-      // Generate a subwave description.
-      let validHps: [string, number, number][] = [['red', 1, 14]];
-      if (this.wave >= 5) validHps.push(['blue', 2, 16]);
-      if (this.wave >= 10) validHps.push(['green', 5, 18]);
-      if (this.wave >= 20) validHps.push(['yellow', 20, 20]);
-      if (this.wave >= 30) validHps.push(['black', 100, 25]);
-      // Pick a random mixture of enemy types.
-      const mixture: [string, number, number, number][] = [];
-      for (let i = 0; i < 3; i++) {
-        const [color, hp, size] = validHps[Math.floor(Math.random() * validHps.length)];
-        const speed = 2.0 + Math.random() * 1.0;
-        mixture.push([color, hp, size, speed]);
+      let enemyCost = 1.0;
+      let speed = 2.0;
+      let biasAdder = Math.sqrt(this.wave);
+      if (fastWave) {
+        biasAdder *= 0.5;
+        speed *= 2.0;
+      }
+      if (hordeWave) {
+        biasAdder *= 0.5;
+      }
+      const enemyTypes: [string, number, number, number, number][] = [
+        ['red',     1,  1, 1.0, 14],
+        ['blue',    2,  2, 1.0, 16],
+        ['green',   5,  3, 1.0, 18],
+        ['yellow', 20,  5, 1.0, 20],
+        ['black', 100, 20, 0.5, 25],
+      ];
+      let index = Math.floor(Math.sqrt(enemySizeBias / 5.0));
+      if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
+        index = 0;
+      }
+      if (!fastWave && this.wave > 15 && this.wave % 3 === 0 && enemyIndex % 13 === 0) {
+        index++;
+      }
+      const [color, hp, gold, speedMult, size] = enemyTypes[Math.min(index, enemyTypes.length - 1)];
+      enemySizeBias -= hp;
+      const enemy = new Enemy(speed * speedMult, hp, gold, color, size);
+      if (shootyWave || (this.wave > 10 && this.wave % 2 === 1 && enemyIndex % 2 === 0)) {
+        biasAdder *= 0.8;
+        enemy.maxShootCooldown = 5.0;
+        enemy.shootDamage = 1;
+      }
+      this.enemySchedule.push([t, enemy]);
+      enemySizeBias += biasAdder;
+
+      enemyIndex++;
+      counter++;
+      if (counter > 10.0 + Math.sqrt(this.wave)) {
+        t += 2.5;
+        counter = 0;
       }
 
-      const subwaveDuration = 5.0 + Math.random() * 3.0;
-      const waveEnd = Math.min(t + subwaveDuration, this.waveTimerMax);
-      let i = 0;
-      while (t < waveEnd) {
-        const [color, hp, size, speed] = mixture[i % mixture.length];
-        this.enemySchedule.push([ t, new Enemy(speed, hp, hp, color, size) ]);
-        t += 1.0 / enemyDensity;
-        i++;
-      }
-      t += 1.0 + Math.random();
+      t += enemyCost / enemyDensity;
     }
+
+    // let t = 0;
+    // while (t < this.waveTimerMax) {
+    //   // // Generate a subwave description.
+    //   // let validHps: [string, number, number][] = [['red', 1, 14]];
+    //   // if (this.wave >= 5) validHps.push(['blue', 2, 16]);
+    //   // if (this.wave >= 10) validHps.push(['green', 5, 18]);
+    //   // if (this.wave >= 20) validHps.push(['yellow', 20, 20]);
+    //   // if (this.wave >= 30) validHps.push(['black', 100, 25]);
+    //   // // Pick a random mixture of enemy types.
+    //   // const mixture: [string, number, number, number][] = [];
+    //   // for (let i = 0; i < 3; i++) {
+    //   //   const [color, hp, size] = validHps[Math.floor(Math.random() * validHps.length)];
+    //   //   const speed = 2.0 + Math.random() * 1.0;
+    //   //   mixture.push([color, hp, size, speed]);
+    //   // }
+
+    //   const subwaveDuration = 5.0 + Math.random() * 3.0;
+    //   const waveEnd = Math.min(t + subwaveDuration, this.waveTimerMax);
+    //   let i = 0;
+    //   while (t < waveEnd) {
+    //     const [color, hp, size, speed] = mixture[i % mixture.length];
+    //     this.enemySchedule.push([ t, new Enemy(speed, hp, hp, color, size) ]);
+    //     t += 1.0 / enemyDensity;
+    //     i++;
+    //   }
+    //   t += 1.0 + Math.random();
+    // }
 
     // for (let i = 0; i < enemyCount; i++) {
     //   //const lerp = i / enemyCount;
@@ -956,7 +1027,7 @@ class App extends React.PureComponent<IAppProps> {
     document.getElementById('fps')!.textContent = fps.toFixed(1);
     let dt = Math.min(elapsed, 0.1);
 
-    let reps = this.fastMode ? 5 : 1;
+    let reps = this.fastMode ? 20 : 1;//5 : 1;
     for (let rep = 0; rep < reps; rep++) {
       // Update path.
       if (this.clickedKnot !== null) {
@@ -1018,7 +1089,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.4 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.2 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
