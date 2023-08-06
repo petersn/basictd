@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.10';
+const VERSION = 'v0.11';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -794,7 +794,7 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 25;
+    this.gold += 35;
     this.gameState = 'wave';
     this.waveTimerMax = 15 + 2.0 * Math.pow(this.wave, 0.6);
     this.waveTimer = 0;
