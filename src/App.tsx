@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.15';
+const VERSION = 'v0.16';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -796,7 +796,7 @@ class App extends React.PureComponent<IAppProps> {
       return;
     this.gold += 50;
     this.gameState = 'wave';
-    this.waveTimerMax = 15 + 2.0 * Math.pow(this.wave, 0.6);
+    this.waveTimerMax = 20 + 3.0 * Math.pow(this.wave, 0.6);
     this.waveTimer = 0;
     this.enemySchedule = [];
     let enemyDensity = 1.0 + Math.sqrt(this.wave / 2.0);
