@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.14';
+const VERSION = 'v0.15';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -828,11 +828,12 @@ class App extends React.PureComponent<IAppProps> {
         ['red',      1,    1,     1, 1.0,  14],
         ['blue',     2,    2,   1.8, 1.0,  16],
         ['green',    4,    5,   2.2, 1.0,  18],
-        ['yellow',  12,   20,     4, 1.0,  20],
-        ['black',   60,  100,    18, 0.75, 22],
-        ['pink',   400, 1000,   150, 0.5,  24],
+        ['yellow',  12,   20,     6, 1.0,  20],
+        ['black',   60,  100,    25, 0.75, 22],
+        ['pink',   350,  650,   150, 0.5,  24],
+        ['white', 1000, 3000,   500, 0.3,  26],
       ];
-      let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.65));
+      let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
         index = 0;
       }
@@ -1108,7 +1109,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.14 : 0.0;
+            const HEAL_RATE = this.enemies.length > 0 ? 0.15 : 0.0;
             turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
@@ -1150,7 +1151,7 @@ class App extends React.PureComponent<IAppProps> {
                   this.effects.push(new GroundEffect(lerpedPos, 10, -10, '#5f5'));
                 }
               }
-              let repairRate = 0.5;
+              let repairRate = 0.7;
               if (turret.upgrades.includes('Repair Speed'))
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
