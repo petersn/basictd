@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.21';
+const VERSION = 'v0.22';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -842,7 +842,12 @@ class App extends React.PureComponent<IAppProps> {
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
-        index = 0;
+        let currentBaseIndex = 0;
+        if (this.wave > 10)
+          currentBaseIndex++;
+        if (this.wave > 30)
+          currentBaseIndex++;
+        index = currentBaseIndex;
       }
       if (!fastWave && this.wave > 15 && this.wave % 3 === 0 && enemyIndex % 13 === 0) {
         index++;
