@@ -810,7 +810,7 @@ class App extends React.PureComponent<IAppProps> {
   startWave = () => {
     if (this.gameState !== 'build')
       return;
-    this.gold += 90;
+    this.gold += 100;
     this.gameState = 'wave';
     this.waveTimerMax = 20 + 2.0 * Math.sqrt(this.wave);
     this.waveTimer = 0;
