@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.9';
+const VERSION = 'v0.10';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -332,17 +332,17 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Repair Capacity',
         description: 'Triples the storage of repair charges.',
-        cost: 450,
+        cost: 150,
       },
       {
         name: 'Repair Range',
         description: 'Increases range by 2 tiles.',
-        cost: 650,
+        cost: 220,
       },
       {
         name: 'Repair Speed',
         description: 'Doubles repair speed.',
-        cost: 750,
+        cost: 395,
       },
     ],
   },
