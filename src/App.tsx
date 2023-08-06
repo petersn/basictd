@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.20';
+const VERSION = 'v0.21';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -116,7 +116,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     icon: '❄️',
     cost: 150,
     hp: 8,
-    range: 1.5,
+    range: 2.0,
     minRange: 0.0,
     damage: 0,
     cooldown: 5.0,
@@ -265,7 +265,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Laser',
     description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 4 damage per second.',
     icon: '📡',
-    cost: 400,
+    cost: 350,
     hp: 5,
     range: 3.5,
     minRange: 0.0,
@@ -276,32 +276,32 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Lubricant',
         description: 'Doubles swivel speed.',
-        cost: 200,
+        cost: 50,
       },
       {
         name: 'Range',
         description: 'Increases range by 3 tiles.',
-        cost: 400,
-      },
-      {
-        name: 'Better Optics',
-        description: 'Doubles damage per second.',
-        cost: 450,
-      },
-      {
-        name: 'Best Optics',
-        description: 'Doubles damage per second again.',
-        cost: 900,
-      },
-      {
-        name: 'X-ray Beam',
-        description: 'Can pass through an enemy, damaging a second.',
-        cost: 1150,
+        cost: 75,
       },
       {
         name: 'Sweeper',
         description: 'Simply always swivels clockwise, but quadruples damage per second.',
-        cost: 1500,
+        cost: 200,
+      },
+      {
+        name: 'Better Optics',
+        description: 'Doubles damage per second.',
+        cost: 375,
+      },
+      {
+        name: 'Best Optics',
+        description: 'Doubles damage per second again.',
+        cost: 725,
+      },
+      {
+        name: 'X-ray Beam',
+        description: 'Can pass through an enemy, damaging a second.',
+        cost: 650,
       },
     ],
   },
@@ -408,7 +408,7 @@ class Enemy {
 
   update(app: App, dt: number) {
     // Never slow down to less than 25% speed.
-    const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
+    const coldFactor = 1.0 / Math.min(4.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
     if (this.burning > 1.0)
       thisFrameSpeed *= 1.45;
@@ -801,7 +801,7 @@ class App extends React.PureComponent<IAppProps> {
       return;
     this.gold += 75;
     this.gameState = 'wave';
-    this.waveTimerMax = 18 + 2.0 * Math.sqrt(this.wave);
+    this.waveTimerMax = 20 + 2.0 * Math.sqrt(this.wave);
     this.waveTimer = 0;
     this.enemySchedule = [];
     let enemyDensity = 1.0 + Math.pow(this.wave / 2.0, 0.65);
@@ -818,6 +818,8 @@ class App extends React.PureComponent<IAppProps> {
     let enemySizeBias = 0;
     let counter = 0;
     let enemyIndex = 0;
+    let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 5));
+    let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 5));
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
@@ -831,12 +833,12 @@ class App extends React.PureComponent<IAppProps> {
       }
       const enemyTypes: [string, number, number, number, number, number][] = [
         ['red',      1,    1,     1, 1.0,  14],
-        ['blue',     2,    2,   1.8, 1.0,  16],
-        ['green',    4,    5,   2.2, 1.0,  18],
-        ['yellow',  12,   20,     6, 1.0,  20],
-        ['black',   50,  100,    25, 0.75, 22],
-        ['pink',   125,  850,   150, 0.5,  24],
-        ['white',  400, 5000,   500, 0.3,  26],
+        ['blue',     2,    2,   2.0, 1.0,  16],
+        ['green',    4,    5,   2.5, 1.0,  18],
+        ['yellow',  12,   20,     7, 1.0,  20],
+        ['black',   50,  100,    35, 0.75, 22],
+        ['pink',   125,  850,   200, 0.5,  24],
+        ['white',  400, 5000,  1000, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -844,6 +846,18 @@ class App extends React.PureComponent<IAppProps> {
       }
       if (!fastWave && this.wave > 15 && this.wave % 3 === 0 && enemyIndex % 13 === 0) {
         index++;
+      }
+      if (index >= 5) {
+        if (pinkLimit > 0)
+          pinkLimit--;
+        else
+          index = 4;
+      }
+      if (index >= 6) {
+        if (whiteLimit > 0)
+          whiteLimit--;
+        else
+          index = 5;
       }
       const [color, subtract, hp, gold, speedMult, size] = enemyTypes[Math.min(index, enemyTypes.length - 1)];
       enemySizeBias -= subtract;
@@ -1290,7 +1304,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.5;
+                    let fireOutput = 0.6;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
