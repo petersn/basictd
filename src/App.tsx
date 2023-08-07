@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.36';
+const VERSION = 'v0.37';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -228,7 +228,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Marx Generator',
         description: 'Never fires except at max charge.',
-        cost: 115,
+        cost: 175,
       },
       {
         name: 'Chain Lightning',
@@ -843,8 +843,12 @@ class App extends React.PureComponent<IAppProps> {
     let enemySizeBias = 0;
     let counter = 0;
     let enemyIndex = 0;
-    let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 3));
-    let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 3));
+    let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 2));
+    if (this.wave > 35)
+      pinkLimit = 10000;
+    let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 2));
+    if (this.wave > 45)
+      whiteLimit = 10000;
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
@@ -1347,7 +1351,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.6;
+                    let fireOutput = 0.45;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     if (turret.upgrades.includes('Napalmier Napalm'))
