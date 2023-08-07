@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.39';
+const VERSION = 'v0.40';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1315,7 +1315,7 @@ class App extends React.PureComponent<IAppProps> {
                         lerp * pos[0] + (1 - lerp) * furthestTarget.pos[0] + (Math.random() - 0.5) * 10,
                         lerp * pos[1] + (1 - lerp) * furthestTarget.pos[1] + (Math.random() - 0.5) * 10,
                       ];
-                      self.effects.push(new GroundEffect(lerpPos, 15 * Math.sqrt(zapAmount), -50, '#ff0'));
+                      self.effects.push(new GroundEffect(lerpPos, 6 * Math.sqrt(zapAmount), -50, '#ff0'));
                     }
                     furthestTarget.hp = accountDamage(furthestTarget.hp, 'zapper', zapAmount * zapAmount);
                     if (chainCount > 0) {
