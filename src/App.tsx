@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.38';
+const VERSION = 'v0.39';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -330,12 +330,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Strongtanium Armor',
         description: 'Halves all damage received.',
-        cost: 225,
+        cost: 150,
       },
       {
         name: 'Indestructiblanium Amror',
         description: 'Halves all damage received again.',
-        cost: 750,
+        cost: 400,
       },
     ],
   },
@@ -843,7 +843,7 @@ class App extends React.PureComponent<IAppProps> {
     const shootyWave = this.wave > 15 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
     if (hordeWave) {
-      enemyDensity *= 3.0;
+      enemyDensity *= 2.7;
     }
 
     let t = 0;
@@ -851,21 +851,23 @@ class App extends React.PureComponent<IAppProps> {
     let counter = 0;
     let enemyIndex = 0;
     let pinkLimit = 1 + Math.max(0, Math.floor((this.wave - 25) / 2));
-    if (this.wave > 35)
-      pinkLimit = 10000;
+    if (this.wave > 35) pinkLimit *= 2;
+    if (this.wave > 45) pinkLimit *= 2;
+    if (this.wave > 55) pinkLimit = 1000000;
     let whiteLimit = 1 + Math.max(0, Math.floor((this.wave - 35) / 2));
-    if (this.wave > 45)
-      whiteLimit = 10000;
+    if (this.wave > 45) whiteLimit *= 2;
+    if (this.wave > 55) whiteLimit *= 2;
+    if (this.wave > 65) whiteLimit = 1000000;
     while (t < this.waveTimerMax) {
       let enemyCost = 1.0;
       let speed = 2.0;
       let biasAdder = Math.max(1.5, Math.pow(this.wave, 1.3) / 3.0);
       if (fastWave) {
-        biasAdder /= 1.25;
-        speed *= 2.0;
+        biasAdder /= 1.3;
+        speed *= 1.75;
       }
       if (hordeWave) {
-        biasAdder /= 1.25;
+        biasAdder /= 1.3;
       }
       const enemyTypes: [string, number, number, number, number, number][] = [
         // color,  sub,   hp,  gold, speed, size
