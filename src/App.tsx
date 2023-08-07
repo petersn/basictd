@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.32';
+const VERSION = 'v0.33';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1261,12 +1261,12 @@ class App extends React.PureComponent<IAppProps> {
 
               // Find all valid targets.
               let clearZapCharge = false;
-              const doAttackFrom = (self: App, pos: Point, chainCount: number, scratch: number) => {
+              const doAttackFrom = (self: App, pos: Point, chainCount: number, scratch: number, isFirst: boolean) => {
                 let furthestT = -1.0;
                 let furthestTarget = null;
                 const haveTargetingComputer = turret.upgrades.includes('Targeting Computer');
                 for (const enemy of self.enemies) {
-                  if (haveTargetingComputer && enemy.hp < 15)
+                  if (haveTargetingComputer && enemy.hp < 15 && isFirst)
                     continue;
                   if (enemy.scratch === scratch)
                     continue;
@@ -1301,7 +1301,7 @@ class App extends React.PureComponent<IAppProps> {
                     furthestTarget.hp = accountDamage(furthestTarget.hp, 'zapper', zapAmount * zapAmount);
                     if (chainCount > 0) {
                       furthestTarget.scratch = scratch;
-                      doAttackFrom(self, furthestTarget.pos, chainCount - 1, scratch);
+                      doAttackFrom(self, furthestTarget.pos, chainCount - 1, scratch, false);
                     }
                   } else if (turret.type === 'laser') {
                     // Swivel towards the target.
@@ -1378,7 +1378,7 @@ class App extends React.PureComponent<IAppProps> {
               ) {
                 continue;
               }
-              doAttackFrom(this, pos, maxChainCount, unique);
+              doAttackFrom(this, pos, maxChainCount, unique, true);
               if (clearZapCharge)
                 turret.zapCharge = 0;
             }
