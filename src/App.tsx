@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.40';
+const VERSION = 'v0.41';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -223,7 +223,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Superconductors',
         description: 'Doubles recharge rate.',
-        cost: 95,
+        cost: 160,
       },
       {
         name: 'Marx Generator',
