@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.37';
+const VERSION = 'v0.38';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -190,7 +190,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up one unit per 1.2 seconds, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per 1.3 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 115,
     hp: 5,
@@ -325,12 +325,17 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 1,
+    maxUpgrades: 2,
     upgrades: [
       {
-        name: 'Reinforced Concrete',
+        name: 'Strongtanium Armor',
         description: 'Halves all damage received.',
         cost: 225,
+      },
+      {
+        name: 'Indestructiblanium Amror',
+        description: 'Halves all damage received again.',
+        cost: 750,
       },
     ],
   },
@@ -674,7 +679,9 @@ class EnemyBullet {
       let d = this.damage;
       if (cell.turret.type === 'wall')
         d *= 0.7;
-      if (cell.turret.upgrades.includes('Reinforced Concrete'))
+      if (cell.turret.upgrades.includes('Strongtanium Armor'))
+        d *= 0.5;
+      if (cell.turret.upgrades.includes('Indestructiblanium Amror'))
         d *= 0.5;
       cell.turret.hp -= d;
       this.damage = 0;
@@ -861,13 +868,14 @@ class App extends React.PureComponent<IAppProps> {
         biasAdder /= 1.25;
       }
       const enemyTypes: [string, number, number, number, number, number][] = [
+        // color,  sub,   hp,  gold, speed, size
         ['red',      1,    1,     1, 1.0,  14],
         ['blue',     2,    2,   2.0, 1.0,  16],
         ['green',    4,    5,   2.5, 1.0,  18],
         ['yellow',  12,   20,     5, 1.0,  20],
-        ['black',   50,  100,    20, 0.75, 22],
-        ['pink',   300,  850,    80, 0.5,  24],
-        ['white', 2000, 5000,   200, 0.3,  26],
+        ['black',   50,  100,    16, 0.75, 22],
+        ['pink',   100,  850,    60, 0.5,  24],
+        ['white',  400, 5000,   200, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -1237,7 +1245,7 @@ class App extends React.PureComponent<IAppProps> {
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
                 maxZapCharge += 4;
-              let rate = 1 / 1.2;
+              let rate = 1 / 1.3;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
