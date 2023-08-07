@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.34';
+const VERSION = 'v0.35';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -258,6 +258,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
         cost: 215,
+      },
+      {
+        name: 'Napalmier Napalm',
+        description: 'Doubles fire damage again.',
+        cost: 360,
       },
       {
         name: 'Rapid Fire',
@@ -1344,6 +1349,8 @@ class App extends React.PureComponent<IAppProps> {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
                     let fireOutput = 0.6;
                     if (turret.upgrades.includes('Napalm'))
+                      fireOutput *= 2.0;
+                    if (turret.upgrades.includes('Napalmier Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
                       const heading = 2 * Math.PI * i / fireballCount;
