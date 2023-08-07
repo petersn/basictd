@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.35';
+const VERSION = 'v0.36';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -252,7 +252,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 1.5,
     damage: 0,
     cooldown: 6.0,
-    maxUpgrades: 2,
+    maxUpgrades: 3,
     upgrades: [
       {
         name: 'Napalm',
