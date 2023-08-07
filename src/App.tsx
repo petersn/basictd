@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.44';
+const VERSION = 'v0.45';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -79,14 +79,9 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 4,
     upgrades: [
       {
-        name: 'Velocity',
-        description: 'Increases bullet velocity to 3x.',
-        cost: 40,
-      },
-      {
-        name: 'Range',
-        description: 'Increases range by 3 tiles.',
-        cost: 65,
+        name: 'Sniper',
+        description: 'Increases range by 3 tiles, and triples bullet velocity.',
+        cost: 85,
       },
       {
         name: 'Rapid Fire',
@@ -1034,6 +1029,8 @@ class App extends React.PureComponent<IAppProps> {
   computeTurretRange = (turret: Turret): number => {
     const data = TURRET_DATA[turret.type];
     let range = data.range;
+    if (turret.upgrades.includes('Sniper'))
+      range += 3;
     if (turret.upgrades.includes('Range'))
       range += 3;
     if (turret.upgrades.includes('Repair Range'))
@@ -1088,7 +1085,7 @@ class App extends React.PureComponent<IAppProps> {
     }
 
     let speed = 650.0;
-    if (turret.upgrades.includes('Velocity'))
+    if (turret.upgrades.includes('Sniper'))
       speed *= 3.0;
     const bullets = [
       new Bullet(pos, furthestTarget.pos, furthestTarget, speed, turret.type),
