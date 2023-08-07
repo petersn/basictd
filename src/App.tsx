@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.33';
+const VERSION = 'v0.34';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -190,7 +190,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up every 2 seconds, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per second, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 115,
     hp: 5,
@@ -1228,7 +1228,7 @@ class App extends React.PureComponent<IAppProps> {
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
                 maxZapCharge += 4;
-              let rate = 0.5;
+              let rate = 1.0;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
