@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.42';
+const VERSION = 'v0.43';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -79,14 +79,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 4,
     upgrades: [
       {
+        name: 'Velocity',
+        description: 'Increases bullet velocity to 3x.',
+        cost: 40,
+      },
+      {
         name: 'Range',
         description: 'Increases range by 3 tiles.',
         cost: 65,
-      },
-      {
-        name: 'Velocity',
-        description: 'Increases bullet velocity to 3x.',
-        cost: 85,
       },
       {
         name: 'Rapid Fire',
