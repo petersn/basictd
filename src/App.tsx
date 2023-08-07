@@ -1315,7 +1315,7 @@ class App extends React.PureComponent<IAppProps> {
                         lerp * pos[0] + (1 - lerp) * furthestTarget.pos[0] + (Math.random() - 0.5) * 10,
                         lerp * pos[1] + (1 - lerp) * furthestTarget.pos[1] + (Math.random() - 0.5) * 10,
                       ];
-                      self.effects.push(new GroundEffect(lerpPos, 6 * Math.sqrt(zapAmount), -50, '#ff0'));
+                      self.effects.push(new GroundEffect(lerpPos, 6 * Math.sqrt(zapAmount), -20 * Math.pow(zapAmount, 0.3), '#ff0'));
                     }
                     furthestTarget.hp = accountDamage(furthestTarget.hp, 'zapper', zapAmount * zapAmount);
                     if (chainCount > 0) {
