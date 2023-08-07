@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.30';
+const VERSION = 'v0.31';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -320,7 +320,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Reinforced Concrete',
         description: 'Halves all damage received.',
-        cost: 300,
+        cost: 225,
       },
     ],
   },
