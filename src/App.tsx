@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.31';
+const VERSION = 'v0.32';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -190,7 +190,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up every 2 seconds, and deals n² damage when released. Max charge: 3.',
+    description: 'Charges up every 2 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 115,
     hp: 5,
@@ -198,42 +198,47 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 0,
     cooldown: 0.0, // Cooldown is controlled by recharging.
-    maxUpgrades: 4,
+    maxUpgrades: 5,
     upgrades: [
       {
-        name: 'Capacitors',
-        description: 'Increases max charge by 3.',
-        cost: 75,
-      },
-      {
-        name: 'Batteries',
-        description: 'Increases max charge by another 3.',
-        cost: 95,
+        name: 'Targeting Computer',
+        description: 'Never fires at enemies with <15 HP.',
+        cost: 35,
       },
       {
         name: 'Range',
         description: 'Increases range by 3 tiles.',
-        cost: 125,
+        cost: 45,
+      },
+      {
+        name: 'Marx Generator',
+        description: 'Never fires except at max charge.',
+        cost: 55,
+      },
+      {
+        name: 'Capacitors',
+        description: 'Increases max charge by 4.',
+        cost: 75,
+      },
+      {
+        name: 'Batteries',
+        description: 'Increases max charge by another 4.',
+        cost: 95,
       },
       {
         name: 'Superconductors',
         description: 'Doubles recharge rate.',
-        cost: 150,
-      },
-      {
-        name: 'Targeting Computer',
-        description: 'Never fires at enemies with <4 HP.',
-        cost: 185,
+        cost: 85,
       },
       {
         name: 'Chain Lightning',
         description: 'Lightning bounces to another enemy.',
-        cost: 200,
+        cost: 185,
       },
       {
         name: 'Lightning Storm',
         description: 'Lightning bounces to yet another enemy.',
-        cost: 300,
+        cost: 215,
       },
     ],
   },
@@ -852,8 +857,8 @@ class App extends React.PureComponent<IAppProps> {
         ['green',    4,    5,   2.5, 1.0,  18],
         ['yellow',  12,   20,     5, 1.0,  20],
         ['black',   50,  100,    20, 0.75, 22],
-        ['pink',   100,  850,    80, 0.5,  24],
-        ['white',  400, 5000,   200, 0.3,  26],
+        ['pink',   300,  850,    80, 0.5,  24],
+        ['white', 2000, 5000,   200, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -1217,18 +1222,18 @@ class App extends React.PureComponent<IAppProps> {
             const range = this.computeTurretRange(turret) * CELL_SIZE;
             const minRange = this.computeTurretMinRange(turret) * CELL_SIZE;
 
+            let maxZapCharge = 4;
             if (turret.type === 'zapper') {
-              let maxCharge = 3;
               if (turret.upgrades.includes('Capacitors'))
-                maxCharge += 3;
+                maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
-                maxCharge += 3;
+                maxZapCharge += 4;
               let rate = 0.5;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
               if (this.enemies.length > 0)
-                turret.zapCharge = Math.min(maxCharge, turret.zapCharge + rate * dt);
+                turret.zapCharge = Math.min(maxZapCharge, turret.zapCharge + rate * dt);
             }
 
             if (turret.cooldown <= 0) {
@@ -1261,7 +1266,7 @@ class App extends React.PureComponent<IAppProps> {
                 let furthestTarget = null;
                 const haveTargetingComputer = turret.upgrades.includes('Targeting Computer');
                 for (const enemy of self.enemies) {
-                  if (haveTargetingComputer && enemy.hp < 4)
+                  if (haveTargetingComputer && enemy.hp < 15)
                     continue;
                   if (enemy.scratch === scratch)
                     continue;
@@ -1366,6 +1371,13 @@ class App extends React.PureComponent<IAppProps> {
               if (turret.upgrades.includes('Lightning Storm'))
                 maxChainCount += 1;
               const unique = Math.floor(1000000 * Math.random());
+              if (
+                turret.type === 'zapper' &&
+                turret.zapCharge < maxZapCharge &&
+                turret.upgrades.includes('Marx Generator')
+              ) {
+                continue;
+              }
               doAttackFrom(this, pos, maxChainCount, unique);
               if (clearZapCharge)
                 turret.zapCharge = 0;
