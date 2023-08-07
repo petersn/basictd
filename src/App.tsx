@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.41';
+const VERSION = 'v0.42';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -317,7 +317,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   wall: {
     name: 'Wall',
-    description: 'Blocks enemy attacks.',
+    description: 'Blocks enemy attacks, with double the HP of other towers. Takes only 70% damage, thus making more efficient use of repair resources.',
     icon: '🧱',
     cost: 20,
     hp: 10,
@@ -465,7 +465,7 @@ class Enemy {
           ], 15.0, -20, col));
     }
     if (this.shootDamage > 0) {
-      this.shootCooldown -= dt * coldFactor;
+      this.shootCooldown -= dt * Math.pow(coldFactor, 0.63);
       if (this.shootCooldown <= 0) {
         this.shootCooldown = this.maxShootCooldown;
         const b = new EnemyBullet(this.pos, 300.0, this.shootDamage);
