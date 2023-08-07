@@ -190,7 +190,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up one unit per second, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per 1.2 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 115,
     hp: 5,
@@ -211,11 +211,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 45,
       },
       {
-        name: 'Marx Generator',
-        description: 'Never fires except at max charge.',
-        cost: 55,
-      },
-      {
         name: 'Capacitors',
         description: 'Increases max charge by 4.',
         cost: 75,
@@ -228,7 +223,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Superconductors',
         description: 'Doubles recharge rate.',
-        cost: 85,
+        cost: 95,
+      },
+      {
+        name: 'Marx Generator',
+        description: 'Never fires except at max charge.',
+        cost: 115,
       },
       {
         name: 'Chain Lightning',
@@ -1228,7 +1228,7 @@ class App extends React.PureComponent<IAppProps> {
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
                 maxZapCharge += 4;
-              let rate = 1.0;
+              let rate = 1 / 1.2;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
