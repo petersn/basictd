@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.45';
+const VERSION = 'v0.46';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1358,7 +1358,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.45;
+                    let fireOutput = 0.6;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     if (turret.upgrades.includes('Napalmier Napalm'))
