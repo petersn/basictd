@@ -870,9 +870,9 @@ class App extends React.PureComponent<IAppProps> {
         ['blue',     2,    2,   2.0, 1.0,  16],
         ['green',    4,    5,   2.5, 1.0,  18],
         ['yellow',  12,   20,     5, 1.0,  20],
-        ['black',   50,  100,    16, 0.75, 22],
-        ['pink',   100,  850,    60, 0.5,  24],
-        ['white',  400, 5000,   200, 0.3,  26],
+        ['black',   50,  100,    13, 0.75, 22],
+        ['pink',   100,  850,    25, 0.5,  24],
+        ['white',  400, 5000,    50, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
