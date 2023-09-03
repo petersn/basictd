@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.55';
+const VERSION = 'v0.56';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -462,7 +462,7 @@ class Enemy {
     this.cold = Math.min(Math.max(0, this.cold - dt), 30.0);
     this.pos = interpolate(app.level.linearPoints, this.t);
     if (this.t >= 1) {
-      app.hp -= Math.max(0, Math.round(this.hp));
+      app.hp -= Math.max(0, Math.round(Math.pow(this.hp, 0.7)));
       this.hp = 0;
       // Enemies that cross the finish don't give gold.
       this.gold = 0;
