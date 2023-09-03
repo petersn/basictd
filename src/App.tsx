@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.54';
+const VERSION = 'v0.55';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -334,7 +334,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 2,
+    maxUpgrades: 3,
     upgrades: [
       {
         name: 'Strongtanium Armor',
@@ -342,9 +342,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 150,
       },
       {
-        name: 'Indestructiblanium Armor',
+        name: 'Resilientanium Armor',
         description: 'Halves all damage received again.',
-        cost: 400,
+        cost: 375,
+      },
+      {
+        name: 'Indestructiblanium Armor',
+        description: 'Halves all damage received again again.',
+        cost: 550,
       },
     ],
   },
@@ -690,7 +695,9 @@ class EnemyBullet {
         d *= 0.7;
       if (cell.turret.upgrades.includes('Strongtanium Armor'))
         d *= 0.5;
-      if (cell.turret.upgrades.includes('Indestructiblanium Amror'))
+      if (cell.turret.upgrades.includes('Resilientanium Armor'))
+        d *= 0.5;
+      if (cell.turret.upgrades.includes('Indestructiblanium Armor'))
         d *= 0.5;
       cell.turret.hp -= d;
       this.damage = 0;
