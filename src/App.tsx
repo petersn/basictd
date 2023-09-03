@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.50';
+const VERSION = 'v0.52';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -11,6 +11,7 @@ const CELL_COUNT_X = 24;
 const CELL_COUNT_Y = 18;
 const EDITOR = false;
 const SELL_FRACTION = 0.9;
+const WIN_LEVEL = 61;
 
 const FIELD_WIDTH = CELL_SIZE * CELL_COUNT_X;
 const FIELD_HEIGHT = CELL_SIZE * CELL_COUNT_Y;
@@ -40,7 +41,7 @@ const PATH: Point[] = [
   [188, -10], [188, 250], [990, 150], [1028, 484], [445, 794], [478, 634], [790, 367], [110, 543], [952, 755], [1095, 931],
 ];
 
-type GameState = 'wave' | 'build' | 'dead';
+type GameState = 'wave' | 'build' | 'dead' | 'win';
 
 type TurretType = 'basic' | 'slow' | 'splash' | 'zapper' | 'fire' | 'laser' | 'wall' | 'repair';
 const TURRET_TYPES: TurretType[] = [ 'basic', 'slow', 'splash', 'zapper', 'fire', 'laser', 'wall', 'repair' ];
@@ -1751,6 +1752,10 @@ class App extends React.PureComponent<IAppProps> {
 
     let rightBarContents = `Enemies: ${this.enemies.length} Bullets: ${this.bullets.length}`;
 
+    if (this.wave === WIN_LEVEL && this.enemies.length === 0) {
+      this.gameState = 'win';
+    }
+
     return <div>
       {/* Top bar */}
       <div style={{
@@ -1793,11 +1798,18 @@ class App extends React.PureComponent<IAppProps> {
           <span style={{ marginTop: -5 }}>{this.fastMode ? '🐇' : '🐢'}</span> {/* ▶ */}
         </div>
 
-        <div>
-          <div>Wave: {colorText('cyan', this.wave)}</div>
-          <div>Prog:
-            <span style={{ whiteSpace: 'pre' }}>{progressText}</span>
-          </div>
+        <div style={{ width: 350 }}>
+          {this.wave === WIN_LEVEL ? <>
+            <div>Wave: {colorText('cyan', 60)}/{colorText('cyan', 60)}</div>
+            <div>
+              {this.enemies.length > 0 ? 'Last wave...' : 'You Win!'}
+            </div>
+          </> : <>
+            <div>Wave: {colorText('cyan', this.wave)}/{colorText('cyan', 60)}</div>
+            <div>Prog:
+              <span style={{ whiteSpace: 'pre' }}>{progressText}</span>
+            </div>
+          </>}
         </div>
 
         <div style={{
@@ -1827,7 +1839,7 @@ class App extends React.PureComponent<IAppProps> {
         <div style={{
           width: this.props.layout.width - 400,
           height: this.props.layout.height - 100,
-          background: this.gameState === 'dead' ? '#363' : '#484',
+          background: this.gameState === 'dead' ? '#363' : (this.gameState === 'win' ? '#595' : '#484'),
           position: 'relative',
         }}
           onClick={() => {
