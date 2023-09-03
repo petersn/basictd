@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.49';
+const VERSION = 'v0.50';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -873,7 +873,7 @@ class App extends React.PureComponent<IAppProps> {
         ['blue',     2,    2,   2.0, 1.0,  16],
         ['green',    4,    5,   2.5, 1.0,  18],
         ['yellow',  12,   20,     5, 1.0,  20],
-        ['#222',    50,  100,    11, 0.75, 22],
+        ['#333',    50,  100,    11, 0.75, 22],
         ['purple', 100,  850,    15, 0.5,  24],
         ['white',  400, 5000,    20, 0.3,  26],
       ];
@@ -918,19 +918,19 @@ class App extends React.PureComponent<IAppProps> {
           enemy.shootCooldown = 2.2;
           enemy.shootDamage += 1;
         }
-        if (enemy.color === '#222') {
+        if (enemy.color === '#333') {
           enemy.shootCooldown = 1.5;
-          enemy.maxShootCooldown = 2.75;
+          enemy.maxShootCooldown = 2.9;
           enemy.shootDamage += 2;
         }
         if (enemy.color === 'purple') {
           enemy.shootCooldown = 0.5;
-          enemy.maxShootCooldown = 2.5;
+          enemy.maxShootCooldown = 2.65;
           enemy.shootDamage += 4;
         }
         if (enemy.color === 'white') {
           enemy.shootCooldown = 0.2;
-          enemy.maxShootCooldown = 2.0;
+          enemy.maxShootCooldown = 2.4;
           enemy.shootDamage += 7;
         }
       }
