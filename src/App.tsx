@@ -328,7 +328,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 150,
       },
       {
-        name: 'Indestructiblanium Amror',
+        name: 'Indestructiblanium Armor',
         description: 'Halves all damage received again.',
         cost: 400,
       },
