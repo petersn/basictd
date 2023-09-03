@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.47';
+const VERSION = 'v0.48';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -268,7 +268,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   laser: {
     name: 'Laser',
-    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 4 damage per second.',
+    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 5 damage per second.',
     icon: '📡',
     cost: 350,
     hp: 5,
@@ -290,7 +290,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Sweeper',
-        description: 'Simply always swivels clockwise, but quadruples damage per second.',
+        description: 'Simply always swivels clockwise, but multiplies damage per second by 6.',
         cost: 200,
       },
       {
@@ -1322,7 +1322,7 @@ class App extends React.PureComponent<IAppProps> {
                   } else if (turret.type === 'laser') {
                     // Swivel towards the target.
                     const angleToTarget = Math.atan2(furthestTarget.pos[1] - pos[1], furthestTarget.pos[0] - pos[0]);
-                    let laserDamageRate = 4.0;
+                    let laserDamageRate = 5.0;
                     if (turret.upgrades.includes('Better Optics'))
                       laserDamageRate *= 2.0;
                     if (turret.upgrades.includes('Best Optics'))
@@ -1331,7 +1331,7 @@ class App extends React.PureComponent<IAppProps> {
                     if (turret.upgrades.includes('Lubricant'))
                       swivelRate *= 2.0;
                     if (turret.upgrades.includes('Sweeper')) {
-                      laserDamageRate *= 4.0;
+                      laserDamageRate *= 6.0;
                       turret.heading += swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else {
