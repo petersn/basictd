@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.53';
+const VERSION = 'v0.54';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -292,13 +292,13 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Clockwise Sweeper',
-        description: 'Simply always swivels clockwise, but multiplies damage per second by 8.',
+        description: 'Simply always swivels clockwise, but multiplies damage per second by 7.',
         cost: 200,
         mutExclusive: ['Counter-clockwise Sweeper'],
       },
       {
         name: 'Counter-clockwise Sweeper',
-        description: 'Simply always swivels counter-clockwise, but multiplies damage per second by 8.',
+        description: 'Simply always swivels counter-clockwise, but multiplies damage per second by 7.',
         cost: 200,
         mutExclusive: ['Clockwise Sweeper'],
       },
@@ -311,6 +311,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Best Optics',
         description: 'Doubles damage per second again.',
         cost: 725,
+      },
+      {
+        name: 'Bestest Optics',
+        description: 'Doubles damage per second again again.',
+        cost: 950,
       },
       {
         name: 'X-ray Beam',
@@ -1355,15 +1360,17 @@ class App extends React.PureComponent<IAppProps> {
                       laserDamageRate *= 2.0;
                     if (turret.upgrades.includes('Best Optics'))
                       laserDamageRate *= 2.0;
+                    if (turret.upgrades.includes('Bestest Optics'))
+                      laserDamageRate *= 2.0;
                     let swivelRate = 0.2;
                     if (turret.upgrades.includes('Lubricant'))
                       swivelRate *= 2.0;
                     if (turret.upgrades.includes('Clockwise Sweeper')) {
-                      laserDamageRate *= 8.0;
+                      laserDamageRate *= 7.0;
                       turret.heading += swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else if (turret.upgrades.includes('Counter-clockwise Sweeper')) {
-                      laserDamageRate *= 8.0;
+                      laserDamageRate *= 7.0;
                       turret.heading -= swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else {
