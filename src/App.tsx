@@ -1948,7 +1948,7 @@ class App extends React.PureComponent<IAppProps> {
                 return <div
                   style={{
                     border: '1px solid #111',
-                    padding: 5,
+                    padding: 7,
                     userSelect: 'none',
                     background: have ? '#222' : '#333',
                     cursor: clickable ? 'pointer' : 'default',
