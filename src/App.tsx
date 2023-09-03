@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.48';
+const VERSION = 'v0.49';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -268,11 +268,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   laser: {
     name: 'Laser',
-    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 5 damage per second.',
+    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 6 damage per second.',
     icon: '📡',
     cost: 350,
     hp: 5,
-    range: 3.5,
+    range: 4.0,
     minRange: 0.0,
     damage: 1,
     cooldown: 0.0,
@@ -284,13 +284,13 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 50,
       },
       {
-        name: 'Range',
-        description: 'Increases range by 3 tiles.',
+        name: 'Lens',
+        description: 'Increases range by 2.5 tiles.',
         cost: 75,
       },
       {
         name: 'Sweeper',
-        description: 'Simply always swivels clockwise, but multiplies damage per second by 6.',
+        description: 'Simply always swivels clockwise, but multiplies damage per second by 10.',
         cost: 200,
       },
       {
@@ -835,7 +835,10 @@ class App extends React.PureComponent<IAppProps> {
     //const enemyCount = this.waveTimerMax * enemyDensity;
 
     const fastWave = this.wave > 10 && (this.wave % 5 === 3);
-    const shootyWave = this.wave > 15 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
+    let shootyWave = this.wave > 15 && (this.wave % 7 === 1 || this.wave % 7 === 2 || this.wave % 7 === 5);
+    if (this.wave >= 50) {
+      shootyWave = true;
+    }
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
     if (hordeWave) {
       enemyDensity *= 2.7;
@@ -870,9 +873,9 @@ class App extends React.PureComponent<IAppProps> {
         ['blue',     2,    2,   2.0, 1.0,  16],
         ['green',    4,    5,   2.5, 1.0,  18],
         ['yellow',  12,   20,     5, 1.0,  20],
-        ['black',   50,  100,    13, 0.75, 22],
-        ['pink',   100,  850,    25, 0.5,  24],
-        ['white',  400, 5000,    50, 0.3,  26],
+        ['#222',    50,  100,    11, 0.75, 22],
+        ['purple', 100,  850,    15, 0.5,  24],
+        ['white',  400, 5000,    20, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -915,16 +918,19 @@ class App extends React.PureComponent<IAppProps> {
           enemy.shootCooldown = 2.2;
           enemy.shootDamage += 1;
         }
-        if (enemy.color === 'black') {
+        if (enemy.color === '#222') {
           enemy.shootCooldown = 1.5;
+          enemy.maxShootCooldown = 2.75;
           enemy.shootDamage += 2;
         }
-        if (enemy.color === 'pink') {
+        if (enemy.color === 'purple') {
           enemy.shootCooldown = 0.5;
+          enemy.maxShootCooldown = 2.5;
           enemy.shootDamage += 4;
         }
         if (enemy.color === 'white') {
-          enemy.shootCooldown = 0.25;
+          enemy.shootCooldown = 0.2;
+          enemy.maxShootCooldown = 2.0;
           enemy.shootDamage += 7;
         }
       }
@@ -1033,6 +1039,8 @@ class App extends React.PureComponent<IAppProps> {
       range += 3;
     if (turret.upgrades.includes('Range'))
       range += 3;
+    if (turret.upgrades.includes('Lens'))
+      range += 2.5;
     if (turret.upgrades.includes('Repair Range'))
       range += 2;
     if (turret.upgrades.includes('Blizzard'))
@@ -1322,7 +1330,7 @@ class App extends React.PureComponent<IAppProps> {
                   } else if (turret.type === 'laser') {
                     // Swivel towards the target.
                     const angleToTarget = Math.atan2(furthestTarget.pos[1] - pos[1], furthestTarget.pos[0] - pos[0]);
-                    let laserDamageRate = 5.0;
+                    let laserDamageRate = 6.0;
                     if (turret.upgrades.includes('Better Optics'))
                       laserDamageRate *= 2.0;
                     if (turret.upgrades.includes('Best Optics'))
@@ -1331,7 +1339,7 @@ class App extends React.PureComponent<IAppProps> {
                     if (turret.upgrades.includes('Lubricant'))
                       swivelRate *= 2.0;
                     if (turret.upgrades.includes('Sweeper')) {
-                      laserDamageRate *= 6.0;
+                      laserDamageRate *= 10.0;
                       turret.heading += swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else {
@@ -1910,9 +1918,9 @@ class App extends React.PureComponent<IAppProps> {
             })}
           </div>
 
-          {shownTurretTypeData !== null && <div style={{ fontSize: 18 }}>
-            <div style={{ fontSize: 20, fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>{shownTurretTypeData.name}
-              &nbsp;<span style={{ fontWeight: 'normal', fontSize: 18 }}>(max {shownTurretTypeData.maxUpgrades} upgrades)</span></div>
+          {shownTurretTypeData !== null && <div style={{ fontSize: 16 }}>
+            <div style={{ fontSize: 18, fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>{shownTurretTypeData.name}
+              &nbsp;<span style={{ fontWeight: 'normal', fontSize: 16 }}>(max {shownTurretTypeData.maxUpgrades} upgrades)</span></div>
             {shownTurretTypeData.description}
             <div
               style={{ display: 'flex', flexDirection: 'column', marginTop: 20 }}
@@ -1940,7 +1948,7 @@ class App extends React.PureComponent<IAppProps> {
                 return <div
                   style={{
                     border: '1px solid #111',
-                    padding: 10,
+                    padding: 5,
                     userSelect: 'none',
                     background: have ? '#222' : '#333',
                     cursor: clickable ? 'pointer' : 'default',
