@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.52';
+const VERSION = 'v0.53';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -50,6 +50,7 @@ interface Upgrade {
   name: string;
   description: string;
   cost: number;
+  mutExclusive?: string[];
 }
 
 interface TurretData {
@@ -121,7 +122,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Deep Freeze',
         description: 'Increases slow duration to 6 seconds.',
-        cost: 185,
+        cost: 145,
       },
       {
         name: 'Blizzard',
@@ -273,7 +274,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     icon: '📡',
     cost: 350,
     hp: 5,
-    range: 4.0,
+    range: 4.5,
     minRange: 0.0,
     damage: 1,
     cooldown: 0.0,
@@ -286,13 +287,20 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Lens',
-        description: 'Increases range by 2.5 tiles.',
+        description: 'Increases range by 2 tiles.',
         cost: 75,
       },
       {
-        name: 'Sweeper',
-        description: 'Simply always swivels clockwise, but multiplies damage per second by 10.',
+        name: 'Clockwise Sweeper',
+        description: 'Simply always swivels clockwise, but multiplies damage per second by 8.',
         cost: 200,
+        mutExclusive: ['Counter-clockwise Sweeper'],
+      },
+      {
+        name: 'Counter-clockwise Sweeper',
+        description: 'Simply always swivels counter-clockwise, but multiplies damage per second by 8.',
+        cost: 200,
+        mutExclusive: ['Clockwise Sweeper'],
       },
       {
         name: 'Better Optics',
@@ -365,7 +373,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Super Repair Speed',
         description: 'Doubles repair speed again.',
-        cost: 750,
+        cost: 650,
       },
     ],
   },
@@ -876,7 +884,7 @@ class App extends React.PureComponent<IAppProps> {
         ['yellow',  12,   20,     5, 1.0,  20],
         ['#333',    50,  100,    11, 0.75, 22],
         ['purple', 100,  850,    15, 0.5,  24],
-        ['white',  400, 5000,    20, 0.3,  26],
+        ['white',  400, 5000,    22, 0.3,  26],
       ];
       let index = Math.floor(Math.pow(Math.max(enemySizeBias, 0) / 5.0, 0.5));
       if (enemyIndex % 6 === 0 || enemyIndex % 6 === 1) {
@@ -926,13 +934,13 @@ class App extends React.PureComponent<IAppProps> {
         }
         if (enemy.color === 'purple') {
           enemy.shootCooldown = 0.5;
-          enemy.maxShootCooldown = 2.65;
+          enemy.maxShootCooldown = 2.8;
           enemy.shootDamage += 4;
         }
         if (enemy.color === 'white') {
           enemy.shootCooldown = 0.2;
-          enemy.maxShootCooldown = 2.4;
-          enemy.shootDamage += 7;
+          enemy.maxShootCooldown = 2.65;
+          enemy.shootDamage += 6;
         }
       }
       this.enemySchedule.push([t, enemy]);
@@ -1009,6 +1017,15 @@ class App extends React.PureComponent<IAppProps> {
     }
   }
 
+  checkMutualExclusion = (turret: Turret, upgrade: Upgrade): boolean => {
+    // Check mutual exclusion.
+    if (upgrade.mutExclusive !== undefined)
+      for (const otherUpgrade of upgrade.mutExclusive)
+        if (turret.upgrades.includes(otherUpgrade))
+          return true;
+    return false;
+  }
+
   clickUpgradeButton = (upgrade: Upgrade) => {
     if (
       this.selectedCell !== null &&
@@ -1017,6 +1034,8 @@ class App extends React.PureComponent<IAppProps> {
       this.gold >= upgrade.cost &&
       this.selectedCell.turret.upgrades.length < TURRET_DATA[this.selectedCell.turret.type].maxUpgrades
     ) {
+      if (this.checkMutualExclusion(this.selectedCell.turret, upgrade))
+        return;
       this.selectedCell.turret.upgrades.push(upgrade.name);
       this.selectedCell.turret.investedGold += upgrade.cost;
       this.gold -= upgrade.cost;
@@ -1041,7 +1060,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Range'))
       range += 3;
     if (turret.upgrades.includes('Lens'))
-      range += 2.5;
+      range += 2;
     if (turret.upgrades.includes('Repair Range'))
       range += 2;
     if (turret.upgrades.includes('Blizzard'))
@@ -1339,9 +1358,13 @@ class App extends React.PureComponent<IAppProps> {
                     let swivelRate = 0.2;
                     if (turret.upgrades.includes('Lubricant'))
                       swivelRate *= 2.0;
-                    if (turret.upgrades.includes('Sweeper')) {
-                      laserDamageRate *= 10.0;
+                    if (turret.upgrades.includes('Clockwise Sweeper')) {
+                      laserDamageRate *= 8.0;
                       turret.heading += swivelRate * dt;
+                      turret.heading %= Math.PI * 2;
+                    } else if (turret.upgrades.includes('Counter-clockwise Sweeper')) {
+                      laserDamageRate *= 8.0;
+                      turret.heading -= swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else {
                       turret.heading = turnTowards(turret.heading, angleToTarget, swivelRate * dt);
@@ -1950,6 +1973,9 @@ class App extends React.PureComponent<IAppProps> {
                   //}
                   if (this.selectedCell.turret.upgrades.includes(upgrade.name)) {
                     have = true;
+                    clickable = false;
+                  }
+                  if (this.checkMutualExclusion(this.selectedCell.turret, upgrade)) {
                     clickable = false;
                   }
                   if (this.selectedCell.turret.upgrades.length >= TURRET_DATA[this.selectedCell.turret.type].maxUpgrades) {
