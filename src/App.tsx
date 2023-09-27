@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.57';
+const VERSION = 'v0.58';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -244,7 +244,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
     cost: 175,
-    hp: 5,
+    hp: 8,
     range: 2.5,
     minRange: 1.5,
     damage: 0,
