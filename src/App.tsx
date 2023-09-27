@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.58';
+const VERSION = 'v0.59';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -249,8 +249,18 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 1.5,
     damage: 0,
     cooldown: 6.0,
-    maxUpgrades: 4,
+    maxUpgrades: 5,
     upgrades: [
+      {
+        name: 'Flame Range',
+        description: 'Increases range by 1 tile.',
+        cost: 45,
+      },
+      {
+        name: 'Strongtanium Armor',
+        description: 'Halves all damage received.',
+        cost: 150,
+      },
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
@@ -1081,6 +1091,8 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Repair Range'))
       range += 2;
     if (turret.upgrades.includes('Blizzard'))
+      range += 1;
+    if (turret.upgrades.includes('Flame Range'))
       range += 1;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
