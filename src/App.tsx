@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.59';
+const VERSION = 'v0.60';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -246,14 +246,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cost: 175,
     hp: 8,
     range: 2.5,
-    minRange: 1.5,
+    minRange: 0.0,
     damage: 0,
     cooldown: 6.0,
     maxUpgrades: 5,
     upgrades: [
       {
         name: 'Flame Range',
-        description: 'Increases range by 1 tile.',
+        description: 'Increases range by 3 tiles.',
         cost: 45,
       },
       {
@@ -1093,7 +1093,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Blizzard'))
       range += 1;
     if (turret.upgrades.includes('Flame Range'))
-      range += 1;
+      range += 3;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
     return range;
