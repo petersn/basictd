@@ -1160,7 +1160,7 @@ class App extends React.PureComponent<IAppProps> {
       }
     }
     if (turret.upgrades.includes('Backwards Shot')) {
-      for (const old of Array.from(bullets.slice)) {
+      for (const old of [...bullets]) {
         const b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
         b.targetDelta = rotate(b.targetDelta, Math.PI);
         bullets.push(b);
