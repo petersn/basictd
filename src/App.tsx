@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.60';
+const VERSION = 'v0.61';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -81,14 +81,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 5,
     upgrades: [
       {
+        name: 'Backwards Shot',
+        description: 'Also shoots backwards.',
+        cost: 55,
+      },
+      {
         name: 'Sniper',
         description: 'Increases range by 3 tiles, and triples bullet velocity.',
         cost: 85,
-      },
-      {
-        name: 'Chain Reaction',
-        description: 'Whenever a bullet kills shoot again.',
-        cost: 150,
       },
       {
         name: 'Rapid Fire',
@@ -156,7 +156,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Distant Bombardment',
         description: 'Increase max range by 2 tiles, min range by 1 tile, and projectile velocity to 3x.',
-        cost: 65,
+        cost: 115,
       },
       //{
       //  name: 'Missiles',
@@ -1159,6 +1159,13 @@ class App extends React.PureComponent<IAppProps> {
         bullets.push(b);
       }
     }
+    if (turret.upgrades.includes('Backwards Shot')) {
+      for (const old of Array.from(bullets.slice)) {
+        const b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
+        b.targetDelta = rotate(b.targetDelta, Math.PI);
+        bullets.push(b);
+      }
+    }
     for (const bullet of bullets) {
       bullet.damage = data.damage;
       if (turret.upgrades.includes('Piercing')) {
@@ -1425,7 +1432,7 @@ class App extends React.PureComponent<IAppProps> {
                     }
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
-                    const fireballCount = 50.0; //Math.round(range / 2.0);
+                    const fireballCount = 60.0; //Math.round(range / 2.0);
                     let fireOutput = 0.7;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
