@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.61';
+const VERSION = 'v0.62';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1162,7 +1162,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Backwards Shot')) {
       for (const old of [...bullets]) {
         const b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
-        b.targetDelta = rotate(b.targetDelta, Math.PI);
+        b.targetDelta = rotate(old.targetDelta, Math.PI);
         bullets.push(b);
       }
     }
