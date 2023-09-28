@@ -78,12 +78,17 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
-    maxUpgrades: 4,
+    maxUpgrades: 5,
     upgrades: [
       {
         name: 'Sniper',
         description: 'Increases range by 3 tiles, and triples bullet velocity.',
         cost: 85,
+      },
+      {
+        name: 'Chain Reaction',
+        description: 'Whenever a bullet kills shoot again.',
+        cost: 150,
       },
       {
         name: 'Rapid Fire',
@@ -146,18 +151,18 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 3.0,
     damage: 3,
     cooldown: 8.0,
-    maxUpgrades: 4,
+    maxUpgrades: 5,
     upgrades: [
       {
         name: 'Distant Bombardment',
-        description: 'Increase min and max range by 2 tiles.',
-        cost: 45,
+        description: 'Increase max range by 2 tiles, min range by 1 tile, and projectile velocity to 3x.',
+        cost: 65,
       },
-      {
-        name: 'Missiles',
-        description: 'Increases projectile velocity to 3x.',
-        cost: 95,
-      },
+      //{
+      //  name: 'Missiles',
+      //  description: 'Increases projectile velocity to 3x.',
+      //  cost: 95,
+      //},
       {
         name: 'Large Area',
         description: 'Increases explosion radius by 70%.',
@@ -1086,7 +1091,7 @@ class App extends React.PureComponent<IAppProps> {
     const data = TURRET_DATA[turret.type];
     let minRange = data.minRange;
     if (turret.upgrades.includes('Distant Bombardment'))
-      minRange += 2;
+      minRange += 1;
     return minRange;
   }
 
@@ -1102,7 +1107,7 @@ class App extends React.PureComponent<IAppProps> {
     const data = TURRET_DATA[turret.type];
     if (turret.type === 'splash') {
       let speed = 250.0;
-      if (turret.upgrades.includes('Missiles'))
+      if (turret.upgrades.includes('Distant Bombardment'))
         speed *= 3.0;
       const b = new Bullet(pos, furthestTarget.pos, furthestTarget, speed, turret.type);
       b.size = 10.0;
@@ -1111,7 +1116,7 @@ class App extends React.PureComponent<IAppProps> {
         radius: 1.5 * CELL_SIZE,
         damage: data.damage,
         maximumEnemies: 10,
-        trail: turret.upgrades.includes('Missiles'),
+        trail: turret.upgrades.includes('Distant Bombardment'),
       };
       if (turret.upgrades.includes('Large Area'))
         b.bombDesc.radius *= 1.7;
