@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.56';
+const VERSION = 'v0.60';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -249,13 +249,23 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
     icon: '🔥',
     cost: 175,
-    hp: 5,
+    hp: 8,
     range: 2.5,
-    minRange: 1.5,
+    minRange: 0.0,
     damage: 0,
     cooldown: 6.0,
-    maxUpgrades: 3,
+    maxUpgrades: 5,
     upgrades: [
+      {
+        name: 'Flame Range',
+        description: 'Increases range by 3 tiles.',
+        cost: 45,
+      },
+      {
+        name: 'Strongtanium Armor',
+        description: 'Halves all damage received.',
+        cost: 150,
+      },
       {
         name: 'Napalm',
         description: 'Doubles fire damage (but over a longer time).',
@@ -265,6 +275,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Napalmier Napalm',
         description: 'Doubles fire damage again.',
         cost: 360,
+      },
+      {
+        name: 'Napalmiest Napalm',
+        description: 'Doubles fire damage again again.',
+        cost: 450,
       },
       {
         name: 'Rapid Fire',
@@ -297,13 +312,13 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Clockwise Sweeper',
-        description: 'Simply always swivels clockwise, but multiplies damage per second by 7.',
+        description: 'Simply always swivels clockwise, but multiplies damage per second by 5.',
         cost: 200,
         mutExclusive: ['Counter-clockwise Sweeper'],
       },
       {
         name: 'Counter-clockwise Sweeper',
-        description: 'Simply always swivels counter-clockwise, but multiplies damage per second by 7.',
+        description: 'Simply always swivels counter-clockwise, but multiplies damage per second by 5.',
         cost: 200,
         mutExclusive: ['Clockwise Sweeper'],
       },
@@ -325,7 +340,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'X-ray Beam',
         description: 'Can pass through an enemy, damaging a second.',
-        cost: 650,
+        cost: 550,
       },
     ],
   },
@@ -1082,6 +1097,8 @@ class App extends React.PureComponent<IAppProps> {
       range += 2;
     if (turret.upgrades.includes('Blizzard'))
       range += 1;
+    if (turret.upgrades.includes('Flame Range'))
+      range += 3;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
     return range;
@@ -1378,11 +1395,11 @@ class App extends React.PureComponent<IAppProps> {
                     if (turret.upgrades.includes('Lubricant'))
                       swivelRate *= 2.0;
                     if (turret.upgrades.includes('Clockwise Sweeper')) {
-                      laserDamageRate *= 7.0;
+                      laserDamageRate *= 5.0;
                       turret.heading += swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else if (turret.upgrades.includes('Counter-clockwise Sweeper')) {
-                      laserDamageRate *= 7.0;
+                      laserDamageRate *= 5.0;
                       turret.heading -= swivelRate * dt;
                       turret.heading %= Math.PI * 2;
                     } else {
@@ -1409,10 +1426,12 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 50.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.6;
+                    let fireOutput = 0.7;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     if (turret.upgrades.includes('Napalmier Napalm'))
+                      fireOutput *= 2.0;
+                    if (turret.upgrades.includes('Napalmiest Napalm'))
                       fireOutput *= 2.0;
                     for (let i = 0; i < fireballCount; i++) {
                       const heading = 2 * Math.PI * i / fireballCount;
