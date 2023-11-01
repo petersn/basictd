@@ -880,6 +880,12 @@ class App extends React.PureComponent<IAppProps> {
     if (this.wave >= 50) {
       shootyWave = true;
     }
+    for (let i = 56; i <= 60; i++) {
+      if (this.wave >= i) {
+        enemyDensity *= 1.2;
+        waveTimerMax *= 1.2;
+      }
+    }
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
     if (hordeWave) {
       enemyDensity *= 2.7;
