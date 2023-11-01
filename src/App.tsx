@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.66';
+const VERSION = 'v0.67';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1192,7 +1192,7 @@ class App extends React.PureComponent<IAppProps> {
     document.getElementById('fps')!.textContent = fps.toFixed(1);
     let dt = Math.min(elapsed, 0.1);
 
-    let reps = this.fastMode ? 5 : 1;
+    let reps = this.fastMode ? 10 : 1;
     for (let rep = 0; rep < reps; rep++) {
       // Update path.
       if (this.clickedKnot !== null) {
