@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.69';
+const VERSION = 'v0.70';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -882,7 +882,7 @@ class App extends React.PureComponent<IAppProps> {
     }
     for (let i = 56; i <= 60; i++) {
       if (this.wave >= i) {
-        enemyDensity *= 1.2;
+        enemyDensity *= 1.1;
         this.waveTimerMax *= 1.2;
       }
     }
