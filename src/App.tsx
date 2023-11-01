@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.68';
+const VERSION = 'v0.69';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -143,14 +143,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   splash: {
     name: 'Cannon',
-    description: 'Shoots an explosive every 5 seconds, dealing 3 damage to up to 10 units.',
+    description: 'Shoots an explosive every 6 seconds, dealing 3 damage to up to 10 units.',
     icon: '💣', // 💥
     cost: 200,
     hp: 5,
     range: 4.5,
     minRange: 3.0,
     damage: 3,
-    cooldown: 5.0,
+    cooldown: 6.0,
     maxUpgrades: 5,
     upgrades: [
       {
@@ -883,7 +883,7 @@ class App extends React.PureComponent<IAppProps> {
     for (let i = 56; i <= 60; i++) {
       if (this.wave >= i) {
         enemyDensity *= 1.2;
-        waveTimerMax *= 1.2;
+        this.waveTimerMax *= 1.2;
       }
     }
     const hordeWave = this.wave > 30 && (this.wave % 11 === 0);
