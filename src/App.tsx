@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.67';
+const VERSION = 'v0.68';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -155,7 +155,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     upgrades: [
       {
         name: 'Distant Bombardment',
-        description: 'Increase max range by 2 tiles, min range by 1 tile, and projectile velocity to 3x.',
+        description: 'Increase max range by 2 tiles, and projectile velocity to 3x.',
         cost: 115,
       },
       //{
@@ -1113,8 +1113,8 @@ class App extends React.PureComponent<IAppProps> {
   computeTurretMinRange = (turret: Turret): number => {
     const data = TURRET_DATA[turret.type];
     let minRange = data.minRange;
-    if (turret.upgrades.includes('Distant Bombardment'))
-      minRange += 1;
+    //if (turret.upgrades.includes('Distant Bombardment'))
+    //  minRange += 1;
     return minRange;
   }
 
