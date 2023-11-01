@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.64';
+const VERSION = 'v0.65';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -143,14 +143,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   splash: {
     name: 'Cannon',
-    description: 'Shoots an explosive every 7 seconds, dealing 3 damage to up to 10 units.',
+    description: 'Shoots an explosive every 5 seconds, dealing 3 damage to up to 10 units.',
     icon: '💣', // 💥
     cost: 200,
     hp: 5,
     range: 4.5,
     minRange: 3.0,
     damage: 3,
-    cooldown: 7.0,
+    cooldown: 5.0,
     maxUpgrades: 5,
     upgrades: [
       {
@@ -192,7 +192,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up one unit per 1.3 seconds, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per 1.5 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 115,
     hp: 5,
@@ -205,7 +205,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Targeting Computer',
         description: 'Never fires at enemies with <15 HP.',
-        cost: 35,
+        cost: 0,
       },
       {
         name: 'Range',
@@ -290,7 +290,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   laser: {
     name: 'Laser',
-    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 6 damage per second.',
+    description: 'Rotates very slowly towards the target enemy, and shoots forward, dealing 5 damage per second.',
     icon: '📡',
     cost: 350,
     hp: 5,
@@ -303,12 +303,12 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Lubricant',
         description: 'Doubles swivel speed.',
-        cost: 50,
+        cost: 0,
       },
       {
         name: 'Lens',
         description: 'Increases range by 2 tiles.',
-        cost: 75,
+        cost: 95,
       },
       {
         name: 'Clockwise Sweeper',
@@ -1313,7 +1313,7 @@ class App extends React.PureComponent<IAppProps> {
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
                 maxZapCharge += 4;
-              let rate = 1 / 1.3;
+              let rate = 1 / 1.5;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
@@ -1391,7 +1391,7 @@ class App extends React.PureComponent<IAppProps> {
                   } else if (turret.type === 'laser') {
                     // Swivel towards the target.
                     const angleToTarget = Math.atan2(furthestTarget.pos[1] - pos[1], furthestTarget.pos[0] - pos[0]);
-                    let laserDamageRate = 6.0;
+                    let laserDamageRate = 5.0;
                     if (turret.upgrades.includes('Better Optics'))
                       laserDamageRate *= 2.0;
                     if (turret.upgrades.includes('Best Optics'))
@@ -1433,7 +1433,7 @@ class App extends React.PureComponent<IAppProps> {
                     self.bullets.push(b);
                   } else if (turret.type === 'fire') {
                     const fireballCount = 60.0; //Math.round(range / 2.0);
-                    let fireOutput = 0.7;
+                    let fireOutput = 0.8;
                     if (turret.upgrades.includes('Napalm'))
                       fireOutput *= 2.0;
                     if (turret.upgrades.includes('Napalmier Napalm'))
