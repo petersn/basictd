@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.65';
+const VERSION = 'v0.66';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -83,7 +83,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Backwards Shot',
         description: 'Also shoots backwards.',
-        cost: 55,
+        cost: 0,
       },
       {
         name: 'Sniper',
