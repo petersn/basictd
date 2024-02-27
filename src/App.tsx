@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.73';
+const VERSION = 'v0.74';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -246,7 +246,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   fire: {
     name: 'Flamethrower',
-    description: 'Lights enemies on fire, damaging them, and making them move faster. Cancels out cold.',
+    description: 'Lights enemies on fire, damaging them over time. Cancels out cold.',
     icon: '🔥',
     cost: 175,
     hp: 8,
@@ -259,7 +259,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Flame Range',
         description: 'Increases range by 3 tiles.',
-        cost: 45,
+        cost: 65,
       },
       {
         name: 'Strongtanium Armor',
@@ -468,8 +468,8 @@ class Enemy {
     // Never slow down to less than one third speed.
     const coldFactor = 1.0 / Math.min(3.0, 1.0 + this.cold)
     let thisFrameSpeed = this.speed * coldFactor;
-    if (this.burning > 1.0)
-      thisFrameSpeed *= 1.45;
+    //if (this.burning > 1.0)
+    //  thisFrameSpeed *= 1.45;
     if (this.cold > 0.1 && Math.random() < Math.min(0.2, this.cold / 5.0)) {
       const frost = new GroundEffect([
         this.pos[0] + (Math.random() - 0.5) * 10,
