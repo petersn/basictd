@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.75';
+const VERSION = 'v0.76';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -114,7 +114,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   slow: {
     name: 'Snow Machine',
-    description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds. Cancels out being on fire.',
+    description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds.',
     icon: '❄️',
     cost: 150,
     hp: 8,
@@ -246,7 +246,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   fire: {
     name: 'Flamethrower',
-    description: 'Lights enemies on fire, damaging them over time. Cancels out cold.',
+    description: 'Lights enemies on fire, damaging them over time.',
     icon: '🔥',
     cost: 175,
     hp: 8,
@@ -640,8 +640,8 @@ class Bullet {
               continue;
             enemy.hp = accountDamage(enemy.hp, this.counterName, this.damage);
             enemy.burning += this.fire;
-            if (this.fire > 0)
-              enemy.cold = 0;
+            //if (this.fire > 0)
+            //  enemy.cold = 0;
             this.hp -= 1;
             this.alreadyHit.push(enemy);
             break;
@@ -1339,7 +1339,7 @@ class App extends React.PureComponent<IAppProps> {
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
                     enemy.cold = Math.min(60.0, enemy.cold + coldAmount);
-                    enemy.burning = 0;
+                    //enemy.burning = 0;
                     doAttack = true;
                   }
                 }
