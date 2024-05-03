@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.77';
+const VERSION = 'v0.78';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -196,7 +196,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     icon: '⚡',
     cost: 110,
     hp: 5,
-    range: 3.0,
+    range: 3.5,
     minRange: 0.0,
     damage: 0,
     cooldown: 0.0, // Cooldown is controlled by recharging.
@@ -239,7 +239,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Range',
-        description: 'Increases range by 2 tiles.',
+        description: 'Increases range by 1.5 tiles.',
         cost: 200,
       },
     ],
@@ -1096,7 +1096,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Sniper'))
       range += 3;
     if (turret.upgrades.includes('Range'))
-      range += 2;
+      range += 1.5;
     if (turret.upgrades.includes('Lens'))
       range += 2;
     if (turret.upgrades.includes('Repair Range'))
