@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.76';
+const VERSION = 'v0.77';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -114,7 +114,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   slow: {
     name: 'Snow Machine',
-    description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds.',
+    description: 'Slows enemy movement and attacks for 3 seconds, once every 5 seconds. Reduces the effects of fire.',
     icon: '❄️',
     cost: 150,
     hp: 8,
@@ -153,11 +153,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cooldown: 6.0,
     maxUpgrades: 5,
     upgrades: [
-      {
-        name: 'Distant Bombardment',
-        description: 'Increase max range by 2 tiles, and projectile velocity to 3x.',
-        cost: 115,
-      },
       //{
       //  name: 'Missiles',
       //  description: 'Increases projectile velocity to 3x.',
@@ -184,9 +179,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         cost: 325,
       },
       {
+        name: 'Distant Bombardment',
+        description: 'Increase max range by 2 tiles, and projectile velocity to 3x.',
+        cost: 200,
+      },
+      {
         name: 'Cluster Bomb',
         description: 'Can damage up to 30 units.',
-        cost: 525,
+        cost: 325,
       },
     ],
   },
@@ -194,7 +194,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     name: 'Zapper',
     description: 'Charges up one unit per 1.3 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
-    cost: 115,
+    cost: 110,
     hp: 5,
     range: 3.0,
     minRange: 0.0,
@@ -206,11 +206,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Targeting Computer',
         description: 'Never fires at enemies with <15 HP.',
         cost: 0,
-      },
-      {
-        name: 'Range',
-        description: 'Increases range by 3 tiles.',
-        cost: 45,
       },
       {
         name: 'Capacitors',
@@ -242,11 +237,16 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         description: 'Lightning bounces to yet another enemy.',
         cost: 215,
       },
+      {
+        name: 'Range',
+        description: 'Increases range by 2 tiles.',
+        cost: 200,
+      },
     ],
   },
   fire: {
     name: 'Flamethrower',
-    description: 'Lights enemies on fire, damaging them over time.',
+    description: 'Lights enemies on fire, damaging them over time. Reduces the effects of cold.',
     icon: '🔥',
     cost: 175,
     hp: 8,
@@ -257,14 +257,14 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 5,
     upgrades: [
       {
-        name: 'Flame Range',
-        description: 'Increases range by 3 tiles.',
-        cost: 65,
-      },
-      {
         name: 'Strongtanium Armor',
         description: 'Halves all damage received.',
         cost: 150,
+      },
+      {
+        name: 'Flame Range',
+        description: 'Increases range by 2 tiles.',
+        cost: 185,
       },
       {
         name: 'Napalm',
@@ -640,8 +640,8 @@ class Bullet {
               continue;
             enemy.hp = accountDamage(enemy.hp, this.counterName, this.damage);
             enemy.burning += this.fire;
-            //if (this.fire > 0)
-            //  enemy.cold = 0;
+            if (this.fire > 0)
+              enemy.cold *= 0.9;
             this.hp -= 1;
             this.alreadyHit.push(enemy);
             break;
@@ -1096,7 +1096,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Sniper'))
       range += 3;
     if (turret.upgrades.includes('Range'))
-      range += 3;
+      range += 2;
     if (turret.upgrades.includes('Lens'))
       range += 2;
     if (turret.upgrades.includes('Repair Range'))
@@ -1104,7 +1104,7 @@ class App extends React.PureComponent<IAppProps> {
     if (turret.upgrades.includes('Blizzard'))
       range += 1;
     if (turret.upgrades.includes('Flame Range'))
-      range += 3;
+      range += 2;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
     return range;
@@ -1339,7 +1339,7 @@ class App extends React.PureComponent<IAppProps> {
                   const d = dist(pos, enemy.pos) - enemy.size - 10.0;
                   if (minRange <= d && d <= range) {
                     enemy.cold = Math.min(60.0, enemy.cold + coldAmount);
-                    //enemy.burning = 0;
+                    enemy.burning *= 0.65;
                     doAttack = true;
                   }
                 }
