@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.78';
+const VERSION = 'v0.79';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -387,8 +387,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     upgrades: [
       {
         name: 'Repair Capacity',
-        description: 'Triples the storage of repair charges.',
-        cost: 55,
+        description: 'Multiplies the storage of repair charges by six.',
+        cost: 25,
       },
       {
         name: 'Repair Range',
@@ -1303,7 +1303,7 @@ class App extends React.PureComponent<IAppProps> {
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
               if (turret.upgrades.includes('Repair Capacity'))
-                maxRepairCharges *= 3;
+                maxRepairCharges *= 6;
               if (this.enemies.length > 0)
                 turret.zapCharge = Math.min(maxRepairCharges, turret.zapCharge + repairRate * dt);
               continue;
