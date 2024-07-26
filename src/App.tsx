@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.79';
+const VERSION = 'v0.80';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -89,6 +89,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Sniper',
         description: 'Increases range by 3 tiles, and triples bullet velocity.',
         cost: 85,
+      },
+      {
+        name: 'Super Sniper',
+        description: 'Increases range by another 3 tiles, and triples bullet velocity.',
+        cost: 350,
       },
       {
         name: 'Rapid Fire',
@@ -1094,6 +1099,8 @@ class App extends React.PureComponent<IAppProps> {
     const data = TURRET_DATA[turret.type];
     let range = data.range;
     if (turret.upgrades.includes('Sniper'))
+      range += 3;
+    if (turret.upgrades.includes('Super Sniper'))
       range += 3;
     if (turret.upgrades.includes('Range'))
       range += 1.5;
