@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.82';
+const VERSION = 'v0.83';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -197,7 +197,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up one unit per 1.2 seconds, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per 1.4 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 110,
     hp: 5,
@@ -207,11 +207,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     cooldown: 0.0, // Cooldown is controlled by recharging.
     maxUpgrades: 5,
     upgrades: [
-      {
-        name: 'Targeting Computer',
-        description: 'Never fires at enemies with <15 HP.',
-        cost: 0,
-      },
+      //{
+      //  name: 'Targeting Computer',
+      //  description: 'Never fires at enemies with <15 HP.',
+      //  cost: 0,
+      //},
       {
         name: 'Capacitors',
         description: 'Increases max charge by 4.',
@@ -220,7 +220,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Batteries',
         description: 'Increases max charge by another 8.',
-        cost: 125,
+        cost: 350,
       },
       {
         name: 'Superconductors',
@@ -240,7 +240,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Lightning Storm',
         description: 'Lightning bounces to yet another two enemies.',
-        cost: 275,
+        cost: 350,
       },
       {
         name: 'Range',
@@ -1328,8 +1328,8 @@ class App extends React.PureComponent<IAppProps> {
               if (turret.upgrades.includes('Capacitors'))
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
-                maxZapCharge += 8;
-              let rate = 1 / 1.2;
+                maxZapCharge += 6;
+              let rate = 1 / 1.4;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
