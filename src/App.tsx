@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.81';
+const VERSION = 'v0.82';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -82,8 +82,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     upgrades: [
       {
         name: 'Backwards Shot',
-        description: 'Also shoots backwards.',
-        cost: 0,
+        description: 'Also shoots backwards left and backwards right.',
+        cost: 25,
       },
       {
         name: 'Sniper',
@@ -197,7 +197,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
   },
   zapper: {
     name: 'Zapper',
-    description: 'Charges up one unit per 1.3 seconds, and deals n² damage when released. Max charge: 4.',
+    description: 'Charges up one unit per 1.2 seconds, and deals n² damage when released. Max charge: 4.',
     icon: '⚡',
     cost: 110,
     hp: 5,
@@ -219,8 +219,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Batteries',
-        description: 'Increases max charge by another 4.',
-        cost: 95,
+        description: 'Increases max charge by another 8.',
+        cost: 125,
       },
       {
         name: 'Superconductors',
@@ -239,8 +239,8 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       },
       {
         name: 'Lightning Storm',
-        description: 'Lightning bounces to yet another enemy.',
-        cost: 215,
+        description: 'Lightning bounces to yet another two enemies.',
+        cost: 275,
       },
       {
         name: 'Range',
@@ -1174,8 +1174,11 @@ class App extends React.PureComponent<IAppProps> {
     }
     if (turret.upgrades.includes('Backwards Shot')) {
       for (const old of [...bullets]) {
-        const b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
-        b.targetDelta = rotate(old.targetDelta, Math.PI);
+        let b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
+        b.targetDelta = rotate(old.targetDelta, 2 * Math.PI / 3);
+        bullets.push(b);
+        b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
+        b.targetDelta = rotate(old.targetDelta, 4 * Math.PI / 3);
         bullets.push(b);
       }
     }
@@ -1325,8 +1328,8 @@ class App extends React.PureComponent<IAppProps> {
               if (turret.upgrades.includes('Capacitors'))
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
-                maxZapCharge += 4;
-              let rate = 1 / 1.3;
+                maxZapCharge += 8;
+              let rate = 1 / 1.2;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
               // We only recharge when there are enemies on screen.
@@ -1477,7 +1480,7 @@ class App extends React.PureComponent<IAppProps> {
               if (turret.upgrades.includes('Chain Lightning'))
                 maxChainCount += 1;
               if (turret.upgrades.includes('Lightning Storm'))
-                maxChainCount += 1;
+                maxChainCount += 2;
               const unique = Math.floor(1000000 * Math.random());
               if (
                 turret.type === 'zapper' &&
