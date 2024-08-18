@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.83';
+const VERSION = 'v0.85';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -846,12 +846,14 @@ class App extends React.PureComponent<IAppProps> {
     document.getElementById('version')!.textContent = VERSION;
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('keydown', this.onKeyDown);
     this.rafLoopHandle = requestAnimationFrame(this.rafLoop);
   }
 
   componentWillUnmount() {
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('keydown', this.onKeyDown);
     if (this.rafLoopHandle !== null) {
       cancelAnimationFrame(this.rafLoopHandle);
     }
@@ -863,6 +865,21 @@ class App extends React.PureComponent<IAppProps> {
 
   onMouseUp = (e: MouseEvent) => {
     this.clickedKnot = null;
+  }
+
+  onKeyDown = (e: KeyboardEvent) => {
+    if (
+      this.selectedCell !== null &&
+      this.selectedCell.turret !== null
+    ) {
+      const selectedTurretTypeData = TURRET_DATA[this.selectedCell.turret.type];
+      for (let i = 0; i < 9; i++) {
+        const key = (i + 1).toString();
+        if (e.key === key && i < selectedTurretTypeData.upgrades.length) {
+          this.clickUpgradeButton(selectedTurretTypeData.upgrades[i]);
+        }
+      }
+    }
   }
 
   startWave = () => {
@@ -1328,7 +1345,7 @@ class App extends React.PureComponent<IAppProps> {
               if (turret.upgrades.includes('Capacitors'))
                 maxZapCharge += 4;
               if (turret.upgrades.includes('Batteries'))
-                maxZapCharge += 6;
+                maxZapCharge += 8;
               let rate = 1 / 1.4;
               if (turret.upgrades.includes('Superconductors'))
                 rate *= 2.0;
