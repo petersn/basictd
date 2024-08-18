@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.85';
+const VERSION = 'v0.86';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
