@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.88';
+const VERSION = 'v0.89';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1176,7 +1176,7 @@ class App extends React.PureComponent<IAppProps> {
       return [b];
     }
 
-    let speed = 825.0;
+    let speed = 875.0;
     if (turret.upgrades.includes('Sniper'))
       speed *= 3.0;
     const bullets = [
@@ -1200,7 +1200,7 @@ class App extends React.PureComponent<IAppProps> {
       }
     }
     for (const bullet of bullets) {
-      bullet.size *= 1.1;
+      bullet.size *= 1.2;
       bullet.damage = data.damage;
       if (turret.upgrades.includes('Piercing')) {
         bullet.hp += 1;
