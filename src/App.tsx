@@ -307,7 +307,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     upgrades: [
       {
         name: 'Lubricant',
-        description: 'Doubles swivel speed.',
+        description: 'Triples swivel speed.',
         cost: 0,
       },
       {
@@ -1434,7 +1434,7 @@ class App extends React.PureComponent<IAppProps> {
                       laserDamageRate *= 2.0;
                     let swivelRate = 0.2;
                     if (turret.upgrades.includes('Lubricant'))
-                      swivelRate *= 2.0;
+                      swivelRate *= 3.0;
                     if (turret.upgrades.includes('Clockwise Sweeper')) {
                       laserDamageRate *= 5.0;
                       turret.heading += swivelRate * dt;
