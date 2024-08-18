@@ -74,7 +74,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     icon: '🔫',
     cost: 100,
     hp: 5,
-    range: 3.0,
+    range: 4.0,
     minRange: 0.0,
     damage: 1,
     cooldown: 1.0,
@@ -83,7 +83,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Backwards Shot',
         description: 'Also shoots backwards left and backwards right.',
-        cost: 25,
+        cost: 0,
       },
       {
         name: 'Sniper',
