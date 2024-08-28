@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.92';
+const VERSION = 'v0.93';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -81,9 +81,9 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     maxUpgrades: 5,
     upgrades: [
       {
-        name: 'Backwards Shot',
-        description: 'Also shoots backwards left and backwards right.',
-        cost: 0,
+        name: 'Four-way Shot',
+        description: 'Also shoots backwards, left, and right.',
+        cost: 25,
       },
       {
         name: 'Sniper',
@@ -1189,13 +1189,16 @@ class App extends React.PureComponent<IAppProps> {
         bullets.push(b);
       }
     }
-    if (turret.upgrades.includes('Backwards Shot')) {
+    if (turret.upgrades.includes('Four-way Shot')) {
       for (const old of [...bullets]) {
         let b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
-        b.targetDelta = rotate(old.targetDelta, 2 * Math.PI / 3);
+        b.targetDelta = rotate(old.targetDelta, Math.PI / 4);
         bullets.push(b);
         b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
-        b.targetDelta = rotate(old.targetDelta, 4 * Math.PI / 3);
+        b.targetDelta = rotate(old.targetDelta, Math.PI);
+        bullets.push(b);
+        b = new Bullet(old.pos, old.targetPos, old.targetEnemy, old.speed, turret.type);
+        b.targetDelta = rotate(old.targetDelta, 3 * Math.PI / 4);
         bullets.push(b);
       }
     }
