@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.94';
+const VERSION = 'v0.95';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -165,7 +165,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       //},
       {
         name: 'Large Area',
-        description: 'Increases explosion radius by 70%.',
+        description: 'Increases explosion radius by 50%.',
         cost: 150,
       },
       {
@@ -1166,7 +1166,7 @@ class App extends React.PureComponent<IAppProps> {
         trail: turret.upgrades.includes('Distant Bombardment'),
       };
       if (turret.upgrades.includes('Large Area'))
-        b.bombDesc.radius *= 1.7;
+        b.bombDesc.radius *= 1.5;
       if (turret.upgrades.includes('Cluster Bomb'))
         b.bombDesc.maximumEnemies *= 3;
       if (turret.upgrades.includes('High Explosives'))
