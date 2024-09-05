@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.95';
+const VERSION = 'v0.96';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -830,6 +830,8 @@ class App extends React.PureComponent<IAppProps> {
   lastRafTime: number = 0;
   mousePos: Point = [ 0, 0 ];
   rafLoopHandle: number | null = null;
+  cheatCode: string = '';
+  cheatTurboRange: boolean = false;
 
   // Handle editing.
   clickedKnot: {
@@ -878,6 +880,19 @@ class App extends React.PureComponent<IAppProps> {
         if (e.key === key && i < selectedTurretTypeData.upgrades.length) {
           this.clickUpgradeButton(selectedTurretTypeData.upgrades[i]);
         }
+      }
+    }
+    this.cheatCode += e.key;
+    if (this.cheatCode.length > 30) {
+      this.cheatCode = this.cheatCode.slice(1);
+    }
+    for (const [cheatCode, f] of [
+      ['money', () => { this.gold += 10000; }],
+      ['range', () => { this.cheatTurboRange = true; }],
+    ]) {
+      if (this.cheatCode.slice(-cheatCode.length) === cheatCode) {
+        f();
+        this.cheatCode = '';
       }
     }
   }
@@ -1131,6 +1146,8 @@ class App extends React.PureComponent<IAppProps> {
       range += 2;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
+    if (this.cheatTurboRange)
+      range *= 1.5;
     return range;
   }
 
