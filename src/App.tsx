@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.96';
+const VERSION = 'v0.97';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -1146,8 +1146,12 @@ class App extends React.PureComponent<IAppProps> {
       range += 2;
     if (turret.upgrades.includes('Distant Bombardment'))
       range += 2;
-    if (this.cheatTurboRange)
+    if (this.cheatTurboRange) {
       range *= 1.5;
+      if (turrent.type === 'Repair Station') {
+        range = Math.ceil(range);
+      }
+    }
     return range;
   }
 
