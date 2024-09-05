@@ -1148,7 +1148,7 @@ class App extends React.PureComponent<IAppProps> {
       range += 2;
     if (this.cheatTurboRange) {
       range *= 1.5;
-      if (turrent.type === 'Repair Station') {
+      if (turret.type === 'Repair Station') {
         range = Math.ceil(range);
       }
     }
