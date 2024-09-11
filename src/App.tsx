@@ -901,8 +901,8 @@ class App extends React.PureComponent<IAppProps> {
       this.cheatCode = this.cheatCode.slice(1);
     }
     for (const [cheatCode, f] of [
-      ['money', () => { this.gold += 10000; }],
       ['smallmoney', () => { this.gold += 100; }],
+      ['money', () => { this.gold += 10000; }],
       ['range', () => { this.cheatTurboRange = true; }],
       ['fullauto', () => { this.cheatFullAutoStart = true; }],
       ['auto', () => { this.cheatAutoStart = true; }],
