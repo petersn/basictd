@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.97';
+const VERSION = 'v0.99';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -164,6 +164,11 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       //  cost: 95,
       //},
       {
+        name: 'Cluster Bomb',
+        description: 'Can damage up to 30 units.',
+        cost: 125,
+      },
+      {
         name: 'Large Area',
         description: 'Increases explosion radius by 50%.',
         cost: 150,
@@ -187,11 +192,6 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
         name: 'Distant Bombardment',
         description: 'Increase max range by 2 tiles, and projectile velocity to 3x.',
         cost: 200,
-      },
-      {
-        name: 'Cluster Bomb',
-        description: 'Can damage up to 30 units.',
-        cost: 325,
       },
     ],
   },
@@ -529,14 +529,16 @@ function accountDamage(hp: number, type: string, amount: number) {
 
 class GroundEffect {
   id: string;
-  pos: Point = [ 0, 0 ];
+  pos: Point = [0, 0];
   size: number = 0;
   dsizedt: number = 0;
   dropRate: number = 0;
-  color: string = 'white';
+  color?: string = 'white';
   opacity: number = 0.3;
+  text: string | null = null;
+  textColor?: string;
 
-  constructor(pos: Point, size: number, dsizedt: number, color: string) {
+  constructor(pos: Point, size: number, dsizedt: number, color?: string) {
     this.id = Math.random().toString() + Math.random().toString();
     this.pos = [pos[0], pos[1]];
     this.size = size;
@@ -561,11 +563,14 @@ class GroundEffect {
           height: 2 * this.size,
           borderRadius: '100%',
           backgroundColor: this.color,
+          color: this.textColor,
           opacity: this.opacity,
           zIndex: 10,
           pointerEvents: 'none',
         }}
-      />
+      >
+        {this.text}
+      </div>
     );
   }
 }
@@ -656,13 +661,13 @@ class Bullet {
         // If we are a bomb, check if we're close enough to explode.
         if (dist(this.pos, this.targetPos) <= this.size) {
           this.hp = 0;
-          let hitsRemaining = this.bombDesc.maximumEnemies;
+          let hits = 0; //this.bombDesc.maximumEnemies;
           for (const enemy of app.enemies) {
             if (dist(this.pos, enemy.pos) <= enemy.size + this.bombDesc.radius) {
               console.log('hit', this.bombDesc);
               enemy.hp = accountDamage(enemy.hp, this.counterName, this.bombDesc.damage);
-              hitsRemaining--;
-              if (hitsRemaining === 0)
+              hits++;
+              if (hits >= this.bombDesc.maximumEnemies)
                 break;
             }
           }
@@ -675,6 +680,11 @@ class Bullet {
             app.effects.push(new GroundEffect(center, r * 0.6, -r*1.5, 'red'));
             app.effects.push(new GroundEffect(center, r * 0.6 / 2, -r*0.75, 'yellow'));
           }
+          const countEffect = new GroundEffect(this.pos, 20.0, -15.0);
+          countEffect.text = hits.toString();
+          countEffect.textColor = 'white';
+          countEffect.opacity = 1.0;
+          app.effects.push(countEffect);
         }
       }
       if (this.hp === 0)
@@ -818,6 +828,8 @@ class App extends React.PureComponent<IAppProps> {
   level: Level;
   gold: number = 200;
   wave: number = 1;
+  totalGameDt: number = 0;
+  waveEndT: number = 0;
   hp: number = 100;
   fastMode: boolean = false;
   waveTimer: number = 0;
@@ -832,6 +844,8 @@ class App extends React.PureComponent<IAppProps> {
   rafLoopHandle: number | null = null;
   cheatCode: string = '';
   cheatTurboRange: boolean = false;
+  cheatFullAutoStart: boolean = false;
+  cheatAutoStart: boolean = false;
 
   // Handle editing.
   clickedKnot: {
@@ -888,7 +902,10 @@ class App extends React.PureComponent<IAppProps> {
     }
     for (const [cheatCode, f] of [
       ['money', () => { this.gold += 10000; }],
+      ['smallmoney', () => { this.gold += 100; }],
       ['range', () => { this.cheatTurboRange = true; }],
+      ['fullauto', () => { this.cheatFullAutoStart = true; }],
+      ['auto', () => { this.cheatAutoStart = true; }],
     ]) {
       if (this.cheatCode.slice(-cheatCode.length) === cheatCode) {
         f();
@@ -1244,7 +1261,13 @@ class App extends React.PureComponent<IAppProps> {
     document.getElementById('fps')!.textContent = fps.toFixed(1);
     let dt = Math.min(elapsed, 0.1);
 
+    if (this.cheatFullAutoStart)
+      this.startWave();
+    if (this.cheatAutoStart && this.gameState === 'build' && this.totalGameDt > this.waveEndT + this.wave / 2.0)
+      this.startWave();
+
     let reps = this.fastMode ? 10 : 1;
+    this.totalGameDt += reps * dt;
     for (let rep = 0; rep < reps; rep++) {
       // Update path.
       if (this.clickedKnot !== null) {
@@ -1265,6 +1288,7 @@ class App extends React.PureComponent<IAppProps> {
           this.waveTimer = 0;
           this.wave++;
           this.gameState = 'build';
+          this.waveEndT = this.totalGameDt;
         }
       }
       if (this.hp <= 0) {
