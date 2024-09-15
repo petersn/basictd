@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.100';
+const VERSION = 'v0.101';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -392,8 +392,13 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     upgrades: [
       {
         name: 'Repair Capacity',
-        description: 'Multiplies the storage of repair charges by ten.',
+        description: 'Multiplies the storage of repair charges by five.',
         cost: 25,
+      },
+      {
+        name: 'Super Repair Capacity',
+        description: 'Multiplies the storage of repair charges by ten.',
+        cost: 100,
       },
       {
         name: 'Repair Range',
@@ -846,6 +851,7 @@ class App extends React.PureComponent<IAppProps> {
   cheatTurboRange: boolean = false;
   cheatFullAutoStart: boolean = false;
   cheatAutoStart: boolean = false;
+  cheatFastRegen: boolean = false;
 
   // Handle editing.
   clickedKnot: {
@@ -906,6 +912,7 @@ class App extends React.PureComponent<IAppProps> {
       ['range', () => { this.cheatTurboRange = true; }],
       ['fullauto', () => { this.cheatFullAutoStart = true; }],
       ['auto', () => { this.cheatAutoStart = true; }],
+      ['heal', () => { this.cheatFastRegen = true; window.alert('Activated heal'); }],
     ]) {
       if (this.cheatCode.slice(-cheatCode.length) === cheatCode) {
         f();
@@ -1330,8 +1337,10 @@ class App extends React.PureComponent<IAppProps> {
               turret.dead = true;
               turret.zapCharge = 0;
             }
-            const HEAL_RATE = this.enemies.length > 0 ? 0.15 : 0.0;
-            turret.hp = Math.min(turret.maxHp, turret.hp + HEAL_RATE * dt);
+            let heal_rate = this.enemies.length > 0 ? 0.15 : 0.0;
+            if (this.cheatFastRegen)
+              heal_rate *= 3;
+            turret.hp = Math.min(turret.maxHp, turret.hp + heal_rate * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
                 turret.dead = false;
@@ -1361,10 +1370,11 @@ class App extends React.PureComponent<IAppProps> {
                   }
                 }
               }
+              const has_capacity_upgrades = turret.upgrades.includes('Repair Capacity') || turret.upgrades.includes('Super Repair Capacity');
               if (
                 turret.zapCharge >= 1
                 && leastHpTurret !== null
-                && ((!turret.upgrades.includes('Repair Capacity')) || Math.random() < 0.2)
+                && (Math.random() < 0.2 || !has_capacity_upgrades)
               ) {
                 turret.zapCharge -= 1;
                 leastHpTurret.hp = Math.min(leastHpTurret.maxHp, leastHpTurret.hp + 1);
@@ -1383,6 +1393,8 @@ class App extends React.PureComponent<IAppProps> {
                 repairRate *= 2.0;
               let maxRepairCharges = 5;
               if (turret.upgrades.includes('Repair Capacity'))
+                maxRepairCharges *= 5;
+              if (turret.upgrades.includes('Super Repair Capacity'))
                 maxRepairCharges *= 10;
               if (this.enemies.length > 0)
                 turret.zapCharge = Math.min(maxRepairCharges, turret.zapCharge + repairRate * dt);
