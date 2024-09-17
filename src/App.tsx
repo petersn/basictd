@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.101';
+const VERSION = 'v0.102';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -851,7 +851,7 @@ class App extends React.PureComponent<IAppProps> {
   cheatTurboRange: boolean = false;
   cheatFullAutoStart: boolean = false;
   cheatAutoStart: boolean = false;
-  cheatFastRegen: boolean = false;
+  cheatHealMult: number = 1;
 
   // Handle editing.
   clickedKnot: {
@@ -908,11 +908,13 @@ class App extends React.PureComponent<IAppProps> {
     }
     for (const [cheatCode, f] of [
       ['smallmoney', () => { this.gold += 100; }],
+      ['midmoney', () => { this.gold += 1000; }],
       ['money', () => { this.gold += 10000; }],
       ['range', () => { this.cheatTurboRange = true; }],
       ['fullauto', () => { this.cheatFullAutoStart = true; }],
       ['auto', () => { this.cheatAutoStart = true; }],
-      ['heal', () => { this.cheatFastRegen = true; window.alert('Activated heal'); }],
+      ['turboheal', () => { this.cheatHealMult = 6; window.alert('Activated turbo heal'); }],
+      ['heal', () => { this.cheatHealMult = 3; window.alert('Activated heal'); }],
     ]) {
       if (this.cheatCode.slice(-cheatCode.length) === cheatCode) {
         f();
@@ -1338,8 +1340,7 @@ class App extends React.PureComponent<IAppProps> {
               turret.zapCharge = 0;
             }
             let heal_rate = this.enemies.length > 0 ? 0.15 : 0.0;
-            if (this.cheatFastRegen)
-              heal_rate *= 3;
+            heal_rate *= this.cheatHealMult;
             turret.hp = Math.min(turret.maxHp, turret.hp + heal_rate * dt);
             if (turret.dead) {
               if (turret.hp >= turret.maxHp) {
