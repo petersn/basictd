@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { ILayoutResult, Rescaler } from './Rescaler';
 import { Point, interpolate, dist, rotate, turnTowards } from './Interpolate';
 
-const VERSION = 'v0.102';
+const VERSION = 'v0.103';
 const WIDTH = 1600;
 const HEIGHT = 1000;
 const CELL_SIZE = 50;
@@ -220,7 +220,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Batteries',
         description: 'Increases max charge by another 8.',
-        cost: 350,
+        cost: 425,
       },
       {
         name: 'Superconductors',
@@ -240,7 +240,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
       {
         name: 'Lightning Storm',
         description: 'Lightning bounces to yet another two enemies.',
-        cost: 350,
+        cost: 425,
       },
       {
         name: 'Range',
@@ -303,7 +303,7 @@ const TURRET_DATA: { [key in TurretType]: TurretData } = {
     minRange: 0.0,
     damage: 1,
     cooldown: 0.0,
-    maxUpgrades: 4,
+    maxUpgrades: 5,
     upgrades: [
       {
         name: 'Lubricant',
@@ -739,6 +739,7 @@ class EnemyBullet {
         d *= 0.5;
       if (cell.turret.upgrades.includes('Indestructiblanium Armor'))
         d *= 0.5;
+      d *= app.cheatArmorMult;
       cell.turret.hp -= d;
       this.damage = 0;
     }
@@ -852,6 +853,7 @@ class App extends React.PureComponent<IAppProps> {
   cheatFullAutoStart: boolean = false;
   cheatAutoStart: boolean = false;
   cheatHealMult: number = 1;
+  cheatArmorMult: number = 1;
 
   // Handle editing.
   clickedKnot: {
@@ -914,7 +916,17 @@ class App extends React.PureComponent<IAppProps> {
       ['fullauto', () => { this.cheatFullAutoStart = true; }],
       ['auto', () => { this.cheatAutoStart = true; }],
       ['turboheal', () => { this.cheatHealMult = 6; window.alert('Activated turbo heal'); }],
+      ['noheal', () => { this.cheatHealMult = 0; window.alert('Activated no heal'); }],
       ['heal', () => { this.cheatHealMult = 3; window.alert('Activated heal'); }],
+      ['armor', () => { this.cheatArmorMult = 0.5; window.alert('Activated armor'); }],
+      ['reset', () => {
+        this.cheatTurboRange = false;
+        this.cheatFullAutoStart = false;
+        this.cheatAutoStart = false;
+        this.cheatHealMult = 1;
+        this.cheatArmorMult = 1.0;
+        window.alert('Reset cheats');
+      }],
     ]) {
       if (this.cheatCode.slice(-cheatCode.length) === cheatCode) {
         f();
